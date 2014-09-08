@@ -5,9 +5,9 @@ import akka.actor.Props
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.config.Protocols
 
-class CqlRequestActionBuilder extends ActionBuilder {
+class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder {
   def build(next: ActorRef, registry: Protocols) = {
-    val jmsProtocol = registry.getProtocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    system.actorOf(Props(new CqlRequestAction(next)))
+    val cqlProtocol = registry.getProtocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
+    system.actorOf(Props(new CqlRequestAction(next, cqlProtocol, attr)))
   }
 }
