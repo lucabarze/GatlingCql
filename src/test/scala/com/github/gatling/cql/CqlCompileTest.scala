@@ -15,7 +15,7 @@ class CqlCompileTest extends Simulation {
     exec(cql("test select").execute("SELECT * FROM schema_columnfamilies"))
   }
 
-  setUp(scn.inject(rampUsersPerSec(10) to 1000 during (10 seconds)))
+  setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))
     .protocols(cqlConfig)
 
 }

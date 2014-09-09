@@ -5,27 +5,13 @@
 	<artifactId>GatlingCql</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>${project.artifactId}</name>
-	<description>My wonderfull scala app</description>
-	<inceptionYear>2010</inceptionYear>
-	<licenses>
-		<license>
-			<name>My License</name>
-			<url>http://....</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
-	<repositories>
-		<repository>
-			<id>JFrog</id>
-			<url>http://repository.excilys.com/content/groups/public/</url>
-		</repository>
-	</repositories>
 
 	<properties>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<encoding>UTF-8</encoding>
 		<scala.version>2.10.4</scala.version>
+		<gatling.version>2.0.0-RC4</gatling.version>
 	</properties>
 
 	<dependencies>
@@ -41,25 +27,13 @@
 		</dependency>
 		<dependency>
 			<groupId>io.gatling</groupId>
-			<version>2.0.0-RC4</version>
+			<version>${gatling.version}</version>
 			<artifactId>gatling-core</artifactId>
-<!-- 			<exclusions>
-				<exclusion>
-					<groupId>org.scala-lang</groupId>
-					<artifactId>scala-compiler</artifactId>
-				</exclusion>
-			</exclusions> -->
 		</dependency>
-				<dependency>
+		<dependency>
 			<groupId>io.gatling</groupId>
-			<version>2.0.0-RC4</version>
+			<version>${gatling.version}</version>
 			<artifactId>gatling-app</artifactId>
-<!-- 			<exclusions>
-				<exclusion>
-					<groupId>org.scala-lang</groupId>
-					<artifactId>scala-compiler</artifactId>
-				</exclusion>
-			</exclusions> -->
 		</dependency>
 
 		<!-- Test -->
@@ -112,9 +86,10 @@
 				</configuration>
 			</plugin>
 			<plugin>
-  <groupId>io.gatling</groupId>
-  <artifactId>gatling-maven-plugin</artifactId>
-</plugin>
+				<groupId>io.gatling</groupId>
+				<artifactId>gatling-maven-plugin</artifactId>
+				<version>${gatling.version}</version>
+			</plugin>
 		</plugins>
 	</build>
 </project>
