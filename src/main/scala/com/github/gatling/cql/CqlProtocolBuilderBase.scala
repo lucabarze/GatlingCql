@@ -7,7 +7,7 @@ import com.datastax.driver.core.Session
 //just a wrapper around CqlProtocol
 
 case object CqlProtocolBuilderBase {
-  def cluster(session: Session) = CqlProtocolBuilder(session)
+  def session(session: Session) = CqlProtocolBuilder(session)
 }
 
 case class CqlProtocolBuilder(session: Session) {
