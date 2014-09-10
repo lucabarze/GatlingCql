@@ -1,10 +1,9 @@
 package com.github.gatling.cql
 
-import io.gatling.core.action.builder.ActionBuilder
-import com.datastax.driver.core.SimpleStatement
-import com.datastax.driver.core.Statement
 import com.datastax.driver.core.PreparedStatement
-import scala.annotation.varargs
+import com.datastax.driver.core.SimpleStatement
+
+import io.gatling.core.action.builder.ActionBuilder
 
 case class CqlRequestBuilderBase(tag: String) {
   def execute(statement: String) = new CqlRequestBuilder(CqlAttributes(tag, new SimpleStatement(statement)))
