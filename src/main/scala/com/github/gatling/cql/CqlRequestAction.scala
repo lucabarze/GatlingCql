@@ -14,7 +14,7 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
 
   def executeOrFail(session: Session): Validation[Unit] = {
     val start = nowMillis
-    protocol.session.execute(attr.statement)
+    protocol.session.execute(attr.statement(session))
     writeRequestData(session, attr.tag, start, nowMillis, start, nowMillis, OK, None, Nil)
     next ! session
     Success()
