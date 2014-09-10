@@ -12,10 +12,13 @@ class CqlCompileTest extends Simulation {
   val cqlConfig = cql.session(session)
   
   val prepared = session.prepare("select * from schema_columnfamilies where keyspace_name = ?")
-  val params = List("system", 2)
+  
+  val random = new util.Random
+  val feeder = Iterator.continually(Map("keyspace" -> (random.nextString(20))))
 
   val scn = scenario("CQLS DSL test").repeat(1) {
-    exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies"))
+    feed(feeder).
+    exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies where keyspace_name ='${keyspace}'"))
     .exec(cql("prepared statement").execute(prepared).params("system"))
   }
 
