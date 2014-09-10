@@ -53,12 +53,10 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
     try {
       val result = protocol.session.execute(stmt)
       writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, OK, None, Nil)
-      logger.trace(s"$stmt")
       next ! session.markAsSucceeded
       result.success
     } catch {
       case e:Exception => {
-        logger.error(s"Error in: $stmt")
         writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, KO, Some(e.getMessage()), List(stmt.toString()))
         next ! session.markAsFailed
         s"Error in: $stmt".failure

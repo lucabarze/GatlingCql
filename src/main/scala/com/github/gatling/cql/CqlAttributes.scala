@@ -25,12 +25,14 @@
  */
 package com.github.gatling.cql
 
+import com.datastax.driver.core.PreparedStatement
+import com.datastax.driver.core.SimpleStatement
 import com.datastax.driver.core.Statement
+
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
-import com.datastax.driver.core.BoundStatement
-import com.datastax.driver.core.SimpleStatement
-import io.gatling.core.validation._
+import io.gatling.core.validation.Failure
+import io.gatling.core.validation.Success
 
 case class CqlAttributes(tag: String, statement: CqlStatement)
 
@@ -43,6 +45,12 @@ case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatemen
     case Failure(error) => throw new IllegalArgumentException(error)
   }
 }
-case class BoundCqlStatement(statement: BoundStatement) extends CqlStatement {
-  def apply(session:Session) = statement
+case class BoundCqlStatement(statement: PreparedStatement, params: Expression[AnyRef]*) extends CqlStatement {
+  def apply(session:Session) = {
+    val parsedParams = params.map{ param => param(session) match {
+     case Success(stmt) => stmt
+     case Failure(error) => throw new IllegalArgumentException(error)
+    }}
+    statement.bind(parsedParams:_*)
+  }
 }

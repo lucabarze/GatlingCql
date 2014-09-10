@@ -37,7 +37,7 @@ case class CqlRequestBuilderBase(tag: String) {
 }  
 
 case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def params(params: AnyRef*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared.bind(params:_*))))
+  def params(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
 }
 
 case class CqlRequestBuilder(attr: CqlAttributes) {
