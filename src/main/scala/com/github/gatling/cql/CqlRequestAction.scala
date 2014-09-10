@@ -18,7 +18,7 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
     // execute a statement
     val start = nowMillis
     val res= protocol.session.execute(attr.statement)
-    writeRequestData(session, "test", start, nowMillis, start, nowMillis, OK, Some("1"), List())
+    writeRequestData(session, attr.tag, start, nowMillis, start, nowMillis, OK, None, Nil)
     next ! session
     Success()
   }
