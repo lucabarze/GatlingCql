@@ -40,10 +40,7 @@ trait CqlStatement {
 
 
 case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatement {
-  def apply(session: Session) = statement(session) match {
-    case Success(stmt) => new SimpleStatement(stmt).success
-    case Failure(error) => error.failure
-  }
+  def apply(session: Session) = statement(session).flatMap(stmt => new SimpleStatement(stmt).success) 
 }
 
 

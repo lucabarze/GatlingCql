@@ -43,7 +43,7 @@ class CqlCompileTest extends Simulation {
 
   val scn = scenario("Two selects").repeat(1) {
     feed(feeder).
-    exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies where keyspace_name = '${keyspace}'"))
+    exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies where keyspace_name = '${keyspace2}'"))
     .exec(cql("prepared statement").execute(prepared).params("${keyspace}", "${keyspace}"))
   }
 
