@@ -50,15 +50,17 @@ case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatemen
 case class BoundCqlStatement(statement: PreparedStatement, params: Expression[AnyRef]*) extends CqlStatement {
   def apply(session:Session) = {
     val parsedParams = params.map(param => param(session))
-    val failure = parsedParams.find(_ match {
-      case Failure(m) => true
-      case _ => false
-    })
+    val failure = parsedParams.find(Failure => true)
     failure match {
-      case Some(failure) => failure match {
-        case Failure(error) => error.failure
+      case Some(Failure(error)) => error.failure
+      case _ => {//all expressions are valid, just get them from the Successes
+        val validatedParams = parsedParams.map(_.get)
+        try {
+          statement.bind(validatedParams:_*).success
+        } catch {
+          case e: Exception => e.getMessage().failure
+        }
       }
-      case None => statement.bind(parsedParams.map(param => param.get):_*).success //TODO: try/catch
     }
   }
 }

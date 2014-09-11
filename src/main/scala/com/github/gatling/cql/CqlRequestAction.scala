@@ -47,7 +47,6 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
   def executeOrFail(session: Session): Validation[ResultSet] = {
     def handleError(start: Long, reason: String):Validation[ResultSet] = {
         writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, KO, Some(reason), Nil)
-        next ! session.markAsFailed
         reason.failure
     }
     
@@ -62,7 +61,7 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
           next ! session.markAsSucceeded
           result.success
         } catch {
-          case e: Exception => handleError(start, s"Error parsing statement [$stmt]: $e")
+          case e: Exception => handleError(start, s"Error executing statement: $e")
         }
       }
       case Failure(error) => handleError(start, s"Error parsing statement: $error")
