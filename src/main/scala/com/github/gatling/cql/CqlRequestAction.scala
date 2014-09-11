@@ -27,7 +27,6 @@ package com.github.gatling.cql
 
 import com.datastax.driver.core.ResultSet
 import com.typesafe.scalalogging.slf4j.StrictLogging
-
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 import io.gatling.core.action.Failable
@@ -37,9 +36,7 @@ import io.gatling.core.result.message.OK
 import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
-import io.gatling.core.validation.FailureWrapper
-import io.gatling.core.validation.SuccessWrapper
-import io.gatling.core.validation.Validation
+import io.gatling.core.validation._
 
 class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes) 
   extends Interruptable 
@@ -48,19 +45,27 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
   with StrictLogging {
 
   def executeOrFail(session: Session): Validation[ResultSet] = {
+    def handleError(start: Long, reason: String):Validation[ResultSet] = {
+        writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, KO, Some(reason), Nil)
+        next ! session.markAsFailed
+        reason.failure
+    }
+    
     val start = nowMillis
     val stmt = attr.statement(session)
-    try {
-      val result = protocol.session.execute(stmt)
-      writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, OK, None, Nil)
-      next ! session.markAsSucceeded
-      result.success
-    } catch {
-      case e:Exception => {
-        writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, KO, Some(e.getMessage()), List(stmt.toString()))
-        next ! session.markAsFailed
-        s"Error in: $stmt".failure
+    stmt match {
+      //Statement was parsed correctly
+      case Success(stmt) => {
+        try {
+          val result = protocol.session.execute(stmt)
+          writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, OK, None, Nil)
+          next ! session.markAsSucceeded
+          result.success
+        } catch {
+          case e: Exception => handleError(start, s"Error parsing statement [$stmt]: $e")
+        }
       }
+      case Failure(error) => handleError(start, s"Error parsing statement: $error")
     }
   }
 

@@ -28,29 +28,37 @@ package com.github.gatling.cql
 import com.datastax.driver.core.PreparedStatement
 import com.datastax.driver.core.SimpleStatement
 import com.datastax.driver.core.Statement
-
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
-import io.gatling.core.validation.Failure
-import io.gatling.core.validation.Success
+import io.gatling.core.validation._
 
 case class CqlAttributes(tag: String, statement: CqlStatement)
 
 trait CqlStatement {
-  def apply(session:Session):Statement
+  def apply(session:Session): Validation[Statement]
 }
+
+
 case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatement {
   def apply(session: Session) = statement(session) match {
-    case Success(stmt) => new SimpleStatement(stmt)
-    case Failure(error) => throw new IllegalArgumentException(error)
+    case Success(stmt) => new SimpleStatement(stmt).success
+    case Failure(error) => error.failure
   }
 }
+
+
 case class BoundCqlStatement(statement: PreparedStatement, params: Expression[AnyRef]*) extends CqlStatement {
   def apply(session:Session) = {
-    val parsedParams = params.map{ param => param(session) match {
-     case Success(stmt) => stmt
-     case Failure(error) => throw new IllegalArgumentException(error)
-    }}
-    statement.bind(parsedParams:_*)
+    val parsedParams = params.map(param => param(session))
+    val failure = parsedParams.find(_ match {
+      case Failure(m) => true
+      case _ => false
+    })
+    failure match {
+      case Some(failure) => failure match {
+        case Failure(error) => error.failure
+      }
+      case None => statement.bind(parsedParams.map(param => param.get):_*).success //TODO: try/catch
+    }
   }
 }
