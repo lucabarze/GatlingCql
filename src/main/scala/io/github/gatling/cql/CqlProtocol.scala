@@ -23,24 +23,11 @@
  * THE SOFTWARE.
  * #L%
  */
-package com.github.gatling.cql
+package io.github.gatling.cql
 
-import com.datastax.driver.core.PreparedStatement
-import com.datastax.driver.core.SimpleStatement
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.Expression
-import com.datastax.driver.core.ConsistencyLevel
+import io.gatling.core.config.{ Credentials, Protocol }
+import com.datastax.driver.core.Cluster
+import com.datastax.driver.core.Session
 
-case class CqlRequestBuilderBase(tag: String) {
-  def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
-  def execute(prepared: PreparedStatement) = new CqlRequestParamsBuilder(tag, prepared)
-}  
-
-case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def withParams(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
-}
-
-case class CqlRequestBuilder(attr: CqlAttributes) {
-    def consistencyLevel(level: ConsistencyLevel) = CqlRequestBuilder(attr.copy(cl= level))
-    def build(): ActionBuilder = new CqlRequestActionBuilder(attr)
-}
+//holds reference to a cluster, just settings
+case class CqlProtocol(session: Session) extends Protocol

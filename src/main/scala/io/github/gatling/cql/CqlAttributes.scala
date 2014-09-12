@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  * #L%
  */
-package com.github.gatling.cql
+package io.github.gatling.cql
 
 import com.datastax.driver.core.PreparedStatement
 import com.datastax.driver.core.SimpleStatement

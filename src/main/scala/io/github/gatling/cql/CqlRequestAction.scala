@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  * #L%
  */
-package com.github.gatling.cql
+package io.github.gatling.cql
 
 import com.datastax.driver.core.ResultSet
 import com.typesafe.scalalogging.slf4j.StrictLogging

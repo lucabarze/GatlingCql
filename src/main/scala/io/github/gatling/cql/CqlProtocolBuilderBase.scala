@@ -23,15 +23,19 @@
  * THE SOFTWARE.
  * #L%
  */
-package com.github.gatling.cql
+package io.github.gatling.cql
 
-import io.gatling.core.action.builder.ActionBuilder
+import io.gatling.core.config.Credentials
+import com.datastax.driver.core.Cluster
+import com.datastax.driver.core.Session
 
-object Predef {
-  val cql = CqlProtocolBuilderBase
-  
-  def cql(tag: String) = CqlRequestBuilderBase(tag)
-  
-  implicit def cqlProtocolBuilder2cqlProtocol(builder: CqlProtocolBuilder): CqlProtocol = builder.build
-  implicit def cqlRequestBuilder2ActionBuilder(builder: CqlRequestBuilder): ActionBuilder = builder.build()
+//just a wrapper around CqlProtocol
+
+case object CqlProtocolBuilderBase {
+  def session(session: Session) = CqlProtocolBuilder(session)
 }
+
+case class CqlProtocolBuilder(session: Session) {
+  def build = new CqlProtocol(session)
+}
+

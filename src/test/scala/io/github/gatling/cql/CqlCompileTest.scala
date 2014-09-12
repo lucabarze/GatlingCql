@@ -23,13 +23,16 @@
  * THE SOFTWARE.
  * #L%
  */
-package com.github.gatling.cql
+package io.github.gatling.cql
 
 import scala.concurrent.duration.DurationInt
+
 import com.datastax.driver.core.Cluster
-import com.github.gatling.cql.Predef._
+
 import io.gatling.core.Predef._
 import io.gatling.core.scenario.Simulation
+import io.github.gatling.cql.Predef._;
+
 import com.datastax.driver.core.ConsistencyLevel
 
 class CqlCompileTest extends Simulation {
