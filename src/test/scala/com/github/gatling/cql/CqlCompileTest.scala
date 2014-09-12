@@ -26,11 +26,11 @@
 package com.github.gatling.cql
 
 import scala.concurrent.duration.DurationInt
-
 import com.datastax.driver.core.Cluster
 import com.github.gatling.cql.Predef._
 import io.gatling.core.Predef._
 import io.gatling.core.scenario.Simulation
+import com.datastax.driver.core.ConsistencyLevel
 
 class CqlCompileTest extends Simulation {
   val session = Cluster.builder().addContactPoint("127.0.0.1").build().connect("system")
@@ -44,7 +44,7 @@ class CqlCompileTest extends Simulation {
   val scn = scenario("Two selects").repeat(1) {
     feed(feeder).
     exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies where keyspace_name = '${keyspace}'"))
-    .exec(cql("prepared statement").execute(prepared).params("${keyspace2}"))
+    .exec(cql("prepared statement").execute(prepared).withParams("${keyspace}").consistencyLevel(ConsistencyLevel.ANY))
   }
 
   setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))

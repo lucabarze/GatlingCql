@@ -27,9 +27,9 @@ package com.github.gatling.cql
 
 import com.datastax.driver.core.PreparedStatement
 import com.datastax.driver.core.SimpleStatement
-
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
+import com.datastax.driver.core.ConsistencyLevel
 
 case class CqlRequestBuilderBase(tag: String) {
   def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
@@ -37,9 +37,10 @@ case class CqlRequestBuilderBase(tag: String) {
 }  
 
 case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def params(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
+  def withParams(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
 }
 
 case class CqlRequestBuilder(attr: CqlAttributes) {
+    def consistencyLevel(level: ConsistencyLevel) = CqlRequestBuilder(attr.copy(cl= level))
     def build(): ActionBuilder = new CqlRequestActionBuilder(attr)
 }

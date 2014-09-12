@@ -56,6 +56,7 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
       //Statement was parsed correctly
       case Success(stmt) => {
         try {
+          stmt.setConsistencyLevel(attr.cl)
           val result = protocol.session.execute(stmt)
           writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, OK, None, Nil)
           next ! session.markAsSucceeded

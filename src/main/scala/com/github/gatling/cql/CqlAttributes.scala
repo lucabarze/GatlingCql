@@ -31,8 +31,9 @@ import com.datastax.driver.core.Statement
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.validation._
+import com.datastax.driver.core.ConsistencyLevel
 
-case class CqlAttributes(tag: String, statement: CqlStatement)
+case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE)
 
 trait CqlStatement {
   def apply(session:Session): Validation[Statement]
@@ -53,7 +54,7 @@ case class BoundCqlStatement(statement: PreparedStatement, params: Expression[An
         case Failure(error) => Failure(error)
       }
       case _ => try {
-        statement.bind(validParsedParams: _*).success
+        statement.bind(validParsedParams.map(_.get): _*).success
       } catch {
         case e: Exception => e.getMessage().failure
       }
