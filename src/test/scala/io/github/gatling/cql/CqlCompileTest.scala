@@ -36,18 +36,38 @@ import io.github.gatling.cql.Predef._;
 import com.datastax.driver.core.ConsistencyLevel
 
 class CqlCompileTest extends Simulation {
-  val session = Cluster.builder().addContactPoint("127.0.0.1").build().connect("system")
+  val keyspace = "test"
+  val table_name = "test_table"
+  val session = Cluster.builder().addContactPoint("127.0.0.1").build().connect(s"$keyspace")
   val cqlConfig = cql.session(session)
   
-  val prepared = session.prepare("select * from schema_columnfamilies where keyspace_name = ?")
+  session.execute(s"CREATE KEYSPACE IF NOT EXISTS $keyspace WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor': '1'}")
+  session.execute(s"""CREATE TABLE IF NOT EXISTS $table_name (
+		  id timeuuid,
+		  num int,
+		  str text,
+		  PRIMARY KEY (id)
+		);
+      """)
+  session.execute(f"CREATE INDEX IF NOT EXISTS $table_name%s_num_idx ON $table_name%s (num)")
+  
+  val prepared = session.prepare(s"INSERT INTO $table_name (id, num, str) values (now(), ?, ?)")
   
   val random = new util.Random
-  val feeder = Iterator.continually(Map("keyspace" -> (random.nextString(20))))
+  val feeder = Iterator.continually(
+      Map(
+          "randomString" -> random.nextString(20), 
+          "randomNum" -> random.nextInt()
+          ))
 
   val scn = scenario("Two selects").repeat(1) {
-    feed(feeder).
-    exec(cql("simple statement").execute("SELECT * FROM schema_columnfamilies where keyspace_name = '${keyspace}'"))
-    .exec(cql("prepared statement").execute(prepared).withParams("${keyspace}").consistencyLevel(ConsistencyLevel.ANY))
+    feed(feeder)
+    .exec(cql("simple SELECT")
+        .execute("SELECT * FROM test_table WHERE num = ${randomNum}"))  //Gatling EL for ${randomNum}"
+    .exec(cql("prepared INSERT")
+        .execute(prepared)
+        .withParams(Integer.valueOf(random.nextInt()), "${randomString}")
+        .consistencyLevel(ConsistencyLevel.ANY))
   }
 
   setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))
