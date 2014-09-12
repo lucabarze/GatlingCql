@@ -51,7 +51,7 @@ case class BoundCqlStatement(statement: PreparedStatement, params: Expression[An
     val (validParsedParams, failures) = parsedParams.partition {case Success(s) => true; case _ => false}
     failures.toList match {
       case x :: xs => x match {
-        case Failure(error) => Failure(error)
+        case Failure(error) => error.failure
       }
       case _ => try {
         statement.bind(validParsedParams.map(_.get): _*).success
