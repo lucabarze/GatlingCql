@@ -28,12 +28,11 @@ package io.github.gatling.cql
 import scala.concurrent.duration.DurationInt
 
 import com.datastax.driver.core.Cluster
+import com.datastax.driver.core.ConsistencyLevel
 
 import io.gatling.core.Predef._
-import io.gatling.core.scenario.Simulation
 import io.github.gatling.cql.Predef._;
-
-import com.datastax.driver.core.ConsistencyLevel
+import io.gatling.core.scenario.Simulation
 
 class CqlCompileTest extends Simulation {
   val keyspace = "test"

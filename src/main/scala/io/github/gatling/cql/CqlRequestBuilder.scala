@@ -27,9 +27,11 @@ package io.github.gatling.cql
 
 import com.datastax.driver.core.PreparedStatement
 import com.datastax.driver.core.SimpleStatement
+import com.datastax.driver.core.ConsistencyLevel
+
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
-import com.datastax.driver.core.ConsistencyLevel
+
 
 case class CqlRequestBuilderBase(tag: String) {
   def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))

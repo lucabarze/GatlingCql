@@ -27,6 +27,7 @@ package io.github.gatling.cql
 
 import com.datastax.driver.core.ResultSet
 import com.typesafe.scalalogging.slf4j.StrictLogging
+
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 import io.gatling.core.action.Failable
@@ -62,7 +63,10 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
           next ! session.markAsSucceeded
           result.success
         } catch {
-          case e: Exception => handleError(start, s"Error executing statement: $e")
+          case e: Exception => {
+            logger.error(s"$stmt", e)
+            handleError(start, s"Error executing statement: $e")
+          }
         }
       }
       case Failure(error) => handleError(start, s"Error parsing statement: $error")
