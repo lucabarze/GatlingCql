@@ -25,7 +25,36 @@
  */
 package io.github.gatling.cql
 
-import com.datastax.driver.core.ConsistencyLevel
+import com.datastax.driver.core.PreparedStatement
+import com.datastax.driver.core.SimpleStatement
+import com.datastax.driver.core.Statement
 
-case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE)
+import io.gatling.core.session._
+import io.gatling.core.validation._
 
+trait CqlStatement {
+  def apply(session:Session): Validation[Statement]
+}
+
+
+case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatement {
+  def apply(session: Session) = statement(session).flatMap(stmt => new SimpleStatement(stmt).success) 
+}
+
+
+case class BoundCqlStatement(statement: PreparedStatement, params: Expression[AnyRef]*) extends CqlStatement {
+  def apply(session:Session) = {
+    val parsedParams = params.map(param => param(session))
+    val (validParsedParams, failures) = parsedParams.partition {case Success(s) => true; case _ => false}
+    failures.toList match {
+      case x :: xs => x match {
+        case Failure(error) => error.failure
+      }
+      case _ => try {
+        statement.bind(validParsedParams.map(_.get): _*).success
+      } catch {
+        case e: Exception => e.getMessage().failure
+      }
+    }
+  }
+}
