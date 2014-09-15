@@ -27,7 +27,6 @@ package io.github.gatling.cql
 
 import com.datastax.driver.core.ResultSet
 import com.typesafe.scalalogging.slf4j.StrictLogging
-
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 import io.gatling.core.action.Failable
@@ -38,6 +37,12 @@ import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
 import io.gatling.core.validation._
+import java.util.concurrent.Executors
+import com.google.common.util.concurrent.Futures
+
+object CqlRequestAction {
+  lazy val executor = Executors.newCachedThreadPool()
+}
 
 class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes) 
   extends Interruptable 
@@ -45,31 +50,13 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
   with DataWriterClient 
   with StrictLogging {
 
-  def executeOrFail(session: Session): Validation[ResultSet] = {
-    def handleError(start: Long, reason: String):Validation[ResultSet] = {
-        writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, KO, Some(reason), Nil)
-        reason.failure
-    }
-    
+  def executeOrFail(session: Session): Validation[Unit] = {
     val start = nowMillis
     val stmt = attr.statement(session)
-    stmt match {
-      //Statement was parsed correctly
-      case Success(stmt) => {
-        try {
-          stmt.setConsistencyLevel(attr.cl)
-          val result = protocol.session.execute(stmt)
-          writeRequestData(session, attr.tag, start, nowMillis, session.startDate, nowMillis, OK, None, Nil)
-          next ! session.markAsSucceeded
-          result.success
-        } catch {
-          case e: Exception => {
-            logger.error(s"$stmt", e)
-            handleError(start, s"Error executing statement: $e")
-          }
-        }
-      }
-      case Failure(error) => handleError(start, s"Error parsing statement: $error")
+    stmt.map{ stmt => 
+      stmt.setConsistencyLevel(attr.cl)
+      val result = protocol.session.executeAsync(stmt)
+      Futures.addCallback(result, new CqlResponseHandler(next, session, start, attr.tag, stmt), CqlRequestAction.executor)
     }
   }
 

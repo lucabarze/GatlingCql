@@ -59,7 +59,7 @@ class CqlCompileTest extends Simulation {
           "randomNum" -> random.nextInt()
           ))
 
-  val scn = scenario("Two selects").repeat(1) {
+  val scn = scenario("Two statements").repeat(1) {
     feed(feeder)
     .exec(cql("simple SELECT")
         .execute("SELECT * FROM test_table WHERE num = ${randomNum}"))  //Gatling EL for ${randomNum}"
