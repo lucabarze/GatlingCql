@@ -25,20 +25,16 @@
  */
 package io.github.gatling.cql
 
-import com.datastax.driver.core.ResultSet
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import java.util.concurrent.Executors
+
+import com.google.common.util.concurrent.Futures
+
 import akka.actor.ActorRef
-import akka.actor.actorRef2Scala
 import io.gatling.core.action.Failable
 import io.gatling.core.action.Interruptable
-import io.gatling.core.result.message.KO
-import io.gatling.core.result.message.OK
-import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
-import io.gatling.core.validation._
-import java.util.concurrent.Executors
-import com.google.common.util.concurrent.Futures
+import io.gatling.core.validation.Validation
 
 object CqlRequestAction {
   lazy val executor = Executors.newCachedThreadPool()
@@ -46,9 +42,7 @@ object CqlRequestAction {
 
 class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes) 
   extends Interruptable 
-  with Failable 
-  with DataWriterClient 
-  with StrictLogging {
+  with Failable {
 
   def executeOrFail(session: Session): Validation[Unit] = {
     val start = nowMillis
@@ -59,5 +53,4 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
       Futures.addCallback(result, new CqlResponseHandler(next, session, start, attr.tag, stmt), CqlRequestAction.executor)
     }
   }
-
 }

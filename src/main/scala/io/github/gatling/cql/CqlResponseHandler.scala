@@ -1,14 +1,15 @@
 package io.github.gatling.cql
 
-import akka.actor.ActorRef
-import com.google.common.util.concurrent.FutureCallback
 import com.datastax.driver.core.ResultSet
-import io.gatling.core.session.Session
-import io.gatling.core.result.writer.DataWriterClient
-import io.gatling.core.util.TimeHelper.nowMillis
-import io.gatling.core.result.message._
 import com.datastax.driver.core.Statement
+import com.google.common.util.concurrent.FutureCallback
 import com.typesafe.scalalogging.slf4j.StrictLogging
+
+import akka.actor._
+import io.gatling.core.result.message._
+import io.gatling.core.result.writer.DataWriterClient
+import io.gatling.core.session.Session
+import io.gatling.core.util.TimeHelper.nowMillis
 
 class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement)
   extends FutureCallback[ResultSet]
