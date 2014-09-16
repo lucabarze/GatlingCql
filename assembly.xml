@@ -26,9 +26,9 @@
 			</includes>
 		</fileSet>
 		<fileSet>
-			<directory>${project.basedir}/src/main/resources/samples</directory>
+			<directory>${project.basedir}/src/test/scala/cassandra</directory>
 			<lineEnding>unix</lineEnding>
-			<outputDirectory>/samples</outputDirectory>
+			<outputDirectory>/user-files/simulations/cassandra</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>
