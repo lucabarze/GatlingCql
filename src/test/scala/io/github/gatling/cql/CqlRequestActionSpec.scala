@@ -27,51 +27,61 @@ package io.github.gatling.cql
 
 import org.easymock.Capture
 import org.easymock.EasyMock.capture
+import org.easymock.EasyMock.reset
+import org.scalatest.BeforeAndAfter
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.mock.EasyMockSugar
+
 import com.datastax.driver.core.RegularStatement
 import com.datastax.driver.core.ResultSetFuture
 import com.datastax.driver.core.Session
+import com.datastax.driver.core.SimpleStatement
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.testkit.TestActorRef
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.session.{Session => GSession}
-import io.gatling.core.session.el.ELCompiler
 import io.gatling.core.validation.FailureWrapper
-import com.datastax.driver.core.SimpleStatement
+import io.gatling.core.validation.SuccessWrapper
 
-class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers {
+class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   implicit lazy val system = ActorSystem()
   GatlingConfiguration.setUp()
-  val el = ELCompiler.compile[String]("select * from test where  id = ${test}")
   val cassandraSession = mock[Session]
+  val statement = mock[CqlStatement]
+  val session = GSession("scenario", "1")
 
   val target = TestActorRef(
     new CqlRequestAction(ActorRef.noSender,
       CqlProtocol(cassandraSession),
-      CqlAttributes("test", SimpleCqlStatement(el)))).underlyingActor
+      CqlAttributes("test", statement))).underlyingActor
 
-  "CqlRequestAction" should "fail if expression is invalid" in {
-    val s = GSession("scenario", "1", Map("bar" -> "BAR"))
+  before {
+    reset(statement, cassandraSession)
+  }
 
-    val result = target.executeOrFail(s)
-    result should be("No attribute named 'test' is defined".failure)
+  "CqlRequestAction" should "fail if expression is invalid and return the error" in {
+    expecting {
+      statement.apply(session).andReturn("OOPS".failure)
+    }
+    whenExecuting(statement) {
+      val result = target.executeOrFail(session)
+      result should be("OOPS".failure)
+    }
   }
 
   it should "execute a valid statement" in {
-    val s = GSession("scenario", "1", Map("test" -> "BAR"))
-
     val stmt = new Capture[RegularStatement]
     expecting {
+      statement.apply(session).andReturn(new SimpleStatement("select * from test").success)
       cassandraSession.executeAsync(capture(stmt)) andReturn (mock[ResultSetFuture])
     }
-    whenExecuting(cassandraSession) {
-      target.executeOrFail(s)
-      stmt.getValue() shouldBe a [SimpleStatement]
-      stmt.getValue().getQueryString() should be ("select * from test where  id = BAR")
+    whenExecuting(statement, cassandraSession) {
+      target.executeOrFail(session)
+      stmt.getValue() shouldBe a[SimpleStatement]
+      stmt.getValue().getQueryString() should be("select * from test")
     }
-
   }
 }
