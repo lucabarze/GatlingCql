@@ -39,7 +39,7 @@ class CassandraSimulation extends Simulation{
 
   val scn = scenario("Two statements").repeat(1) { //Name your scenario
     feed(feeder)
-    .exec(cql("simple SELECT") // 'execute' can accept a string and understand Gatling expression language
+    .exec(cql("simple SELECT") // 'execute' can accept a string and understands Gatling expression language
         .execute("SELECT * FROM test_table WHERE num = ${randomNum}"))  //Gatling EL for ${randomNum}"
     .exec(cql("prepared INSERT")
         .execute(prepared) // alternatively 'execute' accepts a prepared statement
