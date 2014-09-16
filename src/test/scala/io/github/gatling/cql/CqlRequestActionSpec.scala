@@ -32,12 +32,10 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.mock.EasyMockSugar
-
 import com.datastax.driver.core.RegularStatement
 import com.datastax.driver.core.ResultSetFuture
 import com.datastax.driver.core.Session
 import com.datastax.driver.core.SimpleStatement
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.testkit.TestActorRef
@@ -45,6 +43,7 @@ import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.session.{Session => GSession}
 import io.gatling.core.validation.FailureWrapper
 import io.gatling.core.validation.SuccessWrapper
+import com.datastax.driver.core.ConsistencyLevel
 
 class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   implicit lazy val system = ActorSystem()
@@ -56,7 +55,7 @@ class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers wit
   val target = TestActorRef(
     new CqlRequestAction(ActorRef.noSender,
       CqlProtocol(cassandraSession),
-      CqlAttributes("test", statement))).underlyingActor
+      CqlAttributes("test", statement, ConsistencyLevel.ANY))).underlyingActor
 
   before {
     reset(statement, cassandraSession)
@@ -67,21 +66,22 @@ class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers wit
       statement.apply(session).andReturn("OOPS".failure)
     }
     whenExecuting(statement) {
-      val result = target.executeOrFail(session)
-      result should be("OOPS".failure)
+      target.executeOrFail(session) should be("OOPS".failure)
     }
   }
 
   it should "execute a valid statement" in {
-    val stmt = new Capture[RegularStatement]
+    val statementCapture = new Capture[RegularStatement]
     expecting {
       statement.apply(session).andReturn(new SimpleStatement("select * from test").success)
-      cassandraSession.executeAsync(capture(stmt)) andReturn (mock[ResultSetFuture])
+      cassandraSession.executeAsync(capture(statementCapture)) andReturn (mock[ResultSetFuture])
     }
     whenExecuting(statement, cassandraSession) {
       target.executeOrFail(session)
-      stmt.getValue() shouldBe a[SimpleStatement]
-      stmt.getValue().getQueryString() should be("select * from test")
     }
+    val capturedStatement = statementCapture.getValue()
+    capturedStatement shouldBe a[SimpleStatement]
+    capturedStatement.getConsistencyLevel() shouldBe ConsistencyLevel.ANY
+    capturedStatement.getQueryString() should be("select * from test")
   }
 }
