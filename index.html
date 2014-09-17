@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="GatlingCql : Gatling support for Apache Cassandra CQL">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>GatlingCql</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Mishail/GatlingCql">View on GitHub</a>
+
+          <h1 id="project_title">GatlingCql</h1>
+          <h2 id="project_tagline">Gatling support for Apache Cassandra CQL</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Mishail/GatlingCql/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Mishail/GatlingCql/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="gatlingcql" class="anchor" href="#gatlingcql"><span class="octicon octicon-link"></span></a>GatlingCql</h1>
+
+<p>Gatling DSL support for Apache Cassandra CQL</p>
+
+<h2>
+<a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h2>
+
+<p>Basic Gatling DSL for Apache Cassandra CQL, prepared statements are supported as well</p>
+
+<div class="highlight highlight-scala"><pre><span class="k">class</span> <span class="nc">CassandraSimulation</span> <span class="k">extends</span> <span class="nc">Simulation</span><span class="o">{</span>
+  <span class="k">val</span> <span class="n">keyspace</span> <span class="k">=</span> <span class="s">"test"</span>
+  <span class="k">val</span> <span class="n">table_name</span> <span class="k">=</span> <span class="s">"test_table"</span>
+  <span class="k">val</span> <span class="n">session</span> <span class="k">=</span> <span class="nc">Cluster</span><span class="o">.</span><span class="n">builder</span><span class="o">().</span><span class="n">addContactPoint</span><span class="o">(</span><span class="s">"127.0.0.1"</span><span class="o">).</span><span class="n">build</span><span class="o">().</span><span class="n">connect</span><span class="o">(</span><span class="n">s</span><span class="s">"$keyspace"</span><span class="o">)</span> <span class="c1">//Your C* session</span>
+  <span class="k">val</span> <span class="n">cqlConfig</span> <span class="k">=</span> <span class="n">cql</span><span class="o">.</span><span class="n">session</span><span class="o">(</span><span class="n">session</span><span class="o">)</span> <span class="c1">//Initialize Gatling DSL with your session</span>
+
+  <span class="c1">//Setup</span>
+  <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="o">(</span><span class="n">s</span><span class="s">"CREATE KEYSPACE IF NOT EXISTS $keyspace WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor': '1'}"</span><span class="o">)</span>
+  <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="o">(</span><span class="n">s</span><span class="s">"""CREATE TABLE IF NOT EXISTS $table_name (</span>
+<span class="s">          id timeuuid,</span>
+<span class="s">          num int,</span>
+<span class="s">          str text,</span>
+<span class="s">          PRIMARY KEY (id)</span>
+<span class="s">        );</span>
+<span class="s">      """</span><span class="o">)</span>
+  <span class="n">session</span><span class="o">.</span><span class="n">execute</span><span class="o">(</span><span class="n">f</span><span class="s">"CREATE INDEX IF NOT EXISTS $table_name%s_num_idx ON $table_name%s (num)"</span><span class="o">)</span>
+
+
+  <span class="c1">//Prepare your statement, we want to be effective, right?</span>
+  <span class="k">val</span> <span class="n">prepared</span> <span class="k">=</span> <span class="n">session</span><span class="o">.</span><span class="n">prepare</span><span class="o">(</span><span class="n">s</span><span class="s">"INSERT INTO $table_name (id, num, str) values (now(), ?, ?)"</span><span class="o">)</span>
+
+  <span class="k">val</span> <span class="n">random</span> <span class="k">=</span> <span class="k">new</span> <span class="n">util</span><span class="o">.</span><span class="nc">Random</span>
+  <span class="k">val</span> <span class="n">feeder</span> <span class="k">=</span> <span class="nc">Iterator</span><span class="o">.</span><span class="n">continually</span><span class="o">(</span> <span class="c1">// this feader will "feed" random data into our Sessions</span>
+      <span class="nc">Map</span><span class="o">(</span>
+          <span class="s">"randomString"</span> <span class="o">-&gt;</span> <span class="n">random</span><span class="o">.</span><span class="n">nextString</span><span class="o">(</span><span class="mi">20</span><span class="o">),</span> 
+          <span class="s">"randomNum"</span> <span class="o">-&gt;</span> <span class="n">random</span><span class="o">.</span><span class="n">nextInt</span><span class="o">()</span>
+          <span class="o">))</span>
+
+  <span class="k">val</span> <span class="n">scn</span> <span class="k">=</span> <span class="n">scenario</span><span class="o">(</span><span class="s">"Two statements"</span><span class="o">).</span><span class="n">repeat</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span> <span class="c1">//Name your scenario</span>
+    <span class="n">feed</span><span class="o">(</span><span class="n">feeder</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">exec</span><span class="o">(</span><span class="n">cql</span><span class="o">(</span><span class="s">"simple SELECT"</span><span class="o">)</span> <span class="c1">// 'execute' can accept a string and understands Gatling expression language</span>
+        <span class="o">.</span><span class="n">execute</span><span class="o">(</span><span class="s">"SELECT * FROM test_table WHERE num = ${randomNum}"</span><span class="o">))</span>  <span class="c1">//Gatling EL for ${randomNum}"</span>
+    <span class="o">.</span><span class="n">exec</span><span class="o">(</span><span class="n">cql</span><span class="o">(</span><span class="s">"prepared INSERT"</span><span class="o">)</span>
+        <span class="o">.</span><span class="n">execute</span><span class="o">(</span><span class="n">prepared</span><span class="o">)</span> <span class="c1">// alternatively 'execute' accepts a prepared statement</span>
+        <span class="o">.</span><span class="n">withParams</span><span class="o">(</span><span class="nc">Integer</span><span class="o">.</span><span class="n">valueOf</span><span class="o">(</span><span class="n">random</span><span class="o">.</span><span class="n">nextInt</span><span class="o">()),</span> <span class="s">"${randomString}"</span><span class="o">)</span> <span class="c1">// you need to provide parameters for that (gatling EL is supported as well)</span>
+        <span class="o">.</span><span class="n">consistencyLevel</span><span class="o">(</span><span class="nc">ConsistencyLevel</span><span class="o">.</span><span class="nc">ANY</span><span class="o">))</span> <span class="c1">// and set a ConsistencyLevel optionally</span>
+  <span class="o">}</span>
+
+  <span class="n">setUp</span><span class="o">(</span><span class="n">scn</span><span class="o">.</span><span class="n">inject</span><span class="o">(</span><span class="n">rampUsersPerSec</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span> <span class="n">to</span> <span class="mi">100</span> <span class="n">during</span> <span class="o">(</span><span class="mi">30</span> <span class="n">seconds</span><span class="o">)))</span>
+    <span class="o">.</span><span class="n">protocols</span><span class="o">(</span><span class="n">cqlConfig</span><span class="o">)</span>
+</pre></div>
+
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<ul>
+<li>Get a release TGZ</li>
+<li>Unpack into Gatling folder: <code>tar -xjf GatlingCql-0.0.2-SNAPSHOT-release.tar.gz -C gatling-charts-highcharts-2.0.0-RC5/</code>
+</li>
+<li>Run Gatling and you should see <code>cassandra.CassandraSimulation</code> in your simulations list</li>
+</ul><h2>
+<a name="more-information" class="anchor" href="#more-information"><span class="octicon octicon-link"></span></a>More Information</h2>
+
+<ul>
+<li><a href="http://gatling.io/docs/2.0.0-RC5/quickstart.html">http://gatling.io/docs/2.0.0-RC5/quickstart.html</a></li>
+<li><a href="http://gatling.io/docs/2.0.0-RC5/cheat-sheet.html">http://gatling.io/docs/2.0.0-RC5/cheat-sheet.html</a></li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">GatlingCql maintained by <a href="https://github.com/Mishail">Mishail</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
