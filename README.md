@@ -71,10 +71,10 @@ Installation
 ------------
 
 * Get a release TGZ
-* Unpack into Gatling folder: ``tar -xjf GatlingCql-0.0.2-SNAPSHOT-release.tar.gz -C gatling-charts-highcharts-2.0.0-RC5/``
+* Unpack into Gatling folder: ``tar -xjf GatlingCql-0.0.3-release.tar.gz -C gatling-charts-highcharts-bundle-2.1.7/``
 * Run Gatling and you should see ``cassandra.CassandraSimulation`` in your simulations list
 
 More Information
 ----------------
-* http://gatling.io/docs/2.0.0-RC5/quickstart.html
-* http://gatling.io/docs/2.0.0-RC5/cheat-sheet.html
+* http://gatling.io/docs/2.1.7/quickstart.html
+* http://gatling.io/docs/2.1.7/cheat-sheet.html
