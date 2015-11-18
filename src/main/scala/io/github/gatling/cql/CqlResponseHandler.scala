@@ -33,16 +33,25 @@ import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
 import com.typesafe.scalalogging.StrictLogging
 
-class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement)
+class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CheckResult])
   extends FutureCallback[ResultSet]
   with DataWriterClient
   with StrictLogging {
-  
+
   private def writeData(status: Status, message: Option[String]) = writeRequestData(session, tag, start, nowMillis, session.startDate, nowMillis, status, message, Nil)
-  
+
   def onSuccess(result: ResultSet) = {
-    writeData(OK, None)
-    next ! session.markAsSucceeded
+    val checkResults: List[String] = checks.flatMap { f => f(result) }
+    checkResults match {
+      case Nil =>
+        writeData(OK, None)
+        next ! session.markAsSucceeded
+      case xs @ _ =>
+        val errors = xs.mkString("\n")
+        logger.error(errors)
+        writeData(KO, Some(s"Error verifying results: $errors"))
+        next ! session.markAsFailed
+    }
   }
 
   def onFailure(t: Throwable) = {
