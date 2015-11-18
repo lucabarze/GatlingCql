@@ -31,6 +31,7 @@ import io.gatling.core.result.message._
 import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
+import io.gatling.core.validation._
 import com.typesafe.scalalogging.StrictLogging
 
 class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CheckResult])
@@ -41,7 +42,11 @@ class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: Str
   private def writeData(status: Status, message: Option[String]) = writeRequestData(session, tag, start, nowMillis, session.startDate, nowMillis, status, message, Nil)
 
   def onSuccess(result: ResultSet) = {
-    val checkResults: List[String] = checks.flatMap { f => f(result) }
+    val checkResults: List[String] = checks.flatMap { f => f(result) match {
+                                            case Success(_) => None
+                                            case Failure(msg) => Some(msg)
+                                          }
+                                        }
     checkResults match {
       case Nil =>
         writeData(OK, None)

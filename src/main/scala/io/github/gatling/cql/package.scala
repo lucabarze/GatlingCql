@@ -23,8 +23,9 @@
 
 package io.github.gatling
 
+import io.gatling.core.validation.Validation
 import com.datastax.driver.core.ResultSet
 
 package object cql {
-  type CheckResult = ResultSet => Option[String]
+  type CheckResult = ResultSet => Validation[Boolean]
 }
