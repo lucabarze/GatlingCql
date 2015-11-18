@@ -42,18 +42,17 @@ class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: Str
   private def writeData(status: Status, message: Option[String]) = writeRequestData(session, tag, start, nowMillis, session.startDate, nowMillis, status, message, Nil)
 
   def onSuccess(result: ResultSet) = {
-    val checkResults: List[String] = checks.flatMap { check =>
+    val checkFailures: List[String] = checks.flatMap { check =>
       check(result) match {
         case Failure(msg) => Some(msg)
         case _ => None
       }
     }
-    checkResults match {
-      case Nil =>
+    if(checkFailures.isEmpty) {
         writeData(OK, None)
         next ! session.markAsSucceeded
-      case xs @ _ =>
-        val errors = xs.mkString("\n")
+    } else {
+        val errors = checkFailures.mkString("\n")
         logger.error(errors)
         writeData(KO, Some(s"Error verifying results: $errors"))
         next ! session.markAsFailed

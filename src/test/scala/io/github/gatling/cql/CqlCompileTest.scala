@@ -24,19 +24,19 @@ package io.github.gatling.cql
 
 import scala.concurrent.duration.DurationInt
 
-import com.datastax.driver.core.Cluster
-import com.datastax.driver.core.ConsistencyLevel
+import com.datastax.driver.core.{ConsistencyLevel, Cluster, ResultSet}
 
 import io.gatling.core.Predef._
 import io.github.gatling.cql.Predef._;
 import io.gatling.core.scenario.Simulation
+import io.gatling.core.validation._
 
 class CqlCompileTest extends Simulation {
   val keyspace = "test"
   val table_name = "test_table"
   val session = Cluster.builder().addContactPoint("127.0.0.1").build().connect(s"$keyspace")
   val cqlConfig = cql.session(session)
-  
+
   session.execute(s"CREATE KEYSPACE IF NOT EXISTS $keyspace WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor': '1'}")
   session.execute(s"""CREATE TABLE IF NOT EXISTS $table_name (
 		  id timeuuid,
@@ -46,13 +46,13 @@ class CqlCompileTest extends Simulation {
 		);
       """)
   session.execute(f"CREATE INDEX IF NOT EXISTS $table_name%s_num_idx ON $table_name%s (num)")
-  
+
   val prepared = session.prepare(s"INSERT INTO $table_name (id, num, str) values (now(), ?, ?)")
-  
+
   val random = new util.Random
   val feeder = Iterator.continually(
       Map(
-          "randomString" -> random.nextString(20), 
+          "randomString" -> random.nextString(20),
           "randomNum" -> random.nextInt()
           ))
 
@@ -63,7 +63,14 @@ class CqlCompileTest extends Simulation {
     .exec(cql("prepared INSERT")
         .execute(prepared)
         .withParams(Integer.valueOf(random.nextInt()), "${randomString}")
-        .consistencyLevel(ConsistencyLevel.ANY))
+        .consistencyLevel(ConsistencyLevel.ANY)
+        .check { stmt : ResultSet =>
+          stmt.all().size > 0 match {
+            case true => Success(true)
+            case _ => Failure("failed test")
+          }
+        }
+    )
   }
 
   setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))
