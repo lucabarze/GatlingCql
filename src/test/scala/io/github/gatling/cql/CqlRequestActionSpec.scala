@@ -52,7 +52,7 @@ class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers wit
   val target = TestActorRef(
     new CqlRequestAction(ActorRef.noSender,
       CqlProtocol(cassandraSession),
-      CqlAttributes("test", statement, ConsistencyLevel.ANY, List.empty[CheckResult]))).underlyingActor
+      CqlAttributes("test", statement, ConsistencyLevel.ANY, List.empty[CqlCheck]))).underlyingActor
 
   before {
     reset(statement, cassandraSession)

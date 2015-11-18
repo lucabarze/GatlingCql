@@ -34,7 +34,7 @@ import io.gatling.core.util.TimeHelper.nowMillis
 import io.gatling.core.validation._
 import com.typesafe.scalalogging.StrictLogging
 
-class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CheckResult])
+class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
   extends FutureCallback[ResultSet]
   with DataWriterClient
   with StrictLogging {

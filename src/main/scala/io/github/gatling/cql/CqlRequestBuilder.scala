@@ -42,6 +42,6 @@ case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
 
 case class CqlRequestBuilder(attr: CqlAttributes) {
     def consistencyLevel(level: ConsistencyLevel) = CqlRequestBuilder(attr.copy(cl= level))
-    def withCheck(check: CheckResult) = CqlRequestBuilder(attr.copy(checks = check :: attr.checks))
+    def withCheck(check: CqlCheck) = CqlRequestBuilder(attr.copy(checks = check :: attr.checks))
     def build(): ActionBuilder = new CqlRequestActionBuilder(attr)
 }
