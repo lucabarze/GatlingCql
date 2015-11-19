@@ -24,5 +24,5 @@ package io.github.gatling.cql
 
 import com.datastax.driver.core.ConsistencyLevel
 
-case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE)
+case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE, checks: List[CqlCheck] = List.empty[CqlCheck])
 

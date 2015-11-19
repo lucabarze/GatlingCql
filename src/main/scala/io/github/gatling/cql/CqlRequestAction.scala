@@ -37,17 +37,17 @@ object CqlRequestAction {
   lazy val executor = Executors.newCachedThreadPool()
 }
 
-class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes) 
-  extends Interruptable 
+class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes)
+  extends Interruptable
   with Failable {
 
   def executeOrFail(session: Session): Validation[Unit] = {
     val start = nowMillis
     val stmt = attr.statement(session)
-    stmt.map{ stmt => 
+    stmt.map{ stmt =>
       stmt.setConsistencyLevel(attr.cl)
       val result = protocol.session.executeAsync(stmt)
-      Futures.addCallback(result, new CqlResponseHandler(next, session, start, attr.tag, stmt), CqlRequestAction.executor)
+      Futures.addCallback(result, new CqlResponseHandler(next, session, start, attr.tag, stmt, attr.checks), CqlRequestAction.executor)
     }
   }
 }

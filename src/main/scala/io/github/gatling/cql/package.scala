@@ -20,28 +20,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
 
-import com.datastax.driver.core.PreparedStatement
-import com.datastax.driver.core.SimpleStatement
-import com.datastax.driver.core.ConsistencyLevel
+package io.github.gatling
+
+import io.gatling.core.validation.Validation
 import com.datastax.driver.core.ResultSet
 
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.Expression
-
-
-case class CqlRequestBuilderBase(tag: String) {
-  def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
-  def execute(prepared: PreparedStatement) = new CqlRequestParamsBuilder(tag, prepared)
-}
-
-case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def withParams(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
-}
-
-case class CqlRequestBuilder(attr: CqlAttributes) {
-    def consistencyLevel(level: ConsistencyLevel) = CqlRequestBuilder(attr.copy(cl= level))
-    def check(check: CqlCheck) = CqlRequestBuilder(attr.copy(checks = check :: attr.checks))
-    def build(): ActionBuilder = new CqlRequestActionBuilder(attr)
+package object cql {
+  type CqlCheck = ResultSet => Validation[Boolean]
 }
