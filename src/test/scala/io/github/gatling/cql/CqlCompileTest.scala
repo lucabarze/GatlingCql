@@ -59,17 +59,18 @@ class CqlCompileTest extends Simulation {
   val scn = scenario("Two statements").repeat(1) {
     feed(feeder)
     .exec(cql("simple SELECT")
-        .execute("SELECT * FROM test_table WHERE num = ${randomNum}"))  //Gatling EL for ${randomNum}"
+        .execute("SELECT * FROM test_table WHERE num = ${randomNum}")  //Gatling EL for ${randomNum}"
+        .check { result =>
+          if (result.all().isEmpty) {
+            Failure("failed test")
+          } else {
+            Success(true)
+          }
+        })
     .exec(cql("prepared INSERT")
         .execute(prepared)
         .withParams(Integer.valueOf(random.nextInt()), "${randomString}")
         .consistencyLevel(ConsistencyLevel.ANY)
-        .check { stmt : ResultSet =>
-          stmt.all().size > 0 match {
-            case true => Success(true)
-            case _ => Failure("failed test")
-          }
-        }
     )
   }
 
