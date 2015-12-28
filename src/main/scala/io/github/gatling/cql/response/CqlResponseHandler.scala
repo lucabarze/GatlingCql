@@ -20,19 +20,21 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.response
 
-import com.datastax.driver.core.ResultSet
-import com.datastax.driver.core.Statement
+import akka.actor._
+import com.datastax.driver.core.{ResultSet, Statement}
 import com.google.common.util.concurrent.FutureCallback
 import com.typesafe.scalalogging.StrictLogging
-import akka.actor._
+
+import io.gatling.core.check.Check
 import io.gatling.core.result.message._
 import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
-import io.gatling.core.validation._
-import com.typesafe.scalalogging.StrictLogging
+
+import io.github.gatling.cql.checks.CqlCheck
+
 
 class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
   extends FutureCallback[ResultSet]
@@ -41,21 +43,18 @@ class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: Str
 
   private def writeData(status: Status, message: Option[String]) = writeRequestData(session, tag, start, nowMillis, session.startDate, nowMillis, status, message, Nil)
 
-  def onSuccess(result: ResultSet) = {
-    val checkFailures: List[String] = checks.flatMap { check =>
-      check(result) match {
-        case Failure(msg) => Some(msg)
-        case _ => None
-      }
+  def onSuccess(resultSet: ResultSet) = {
+    val response = new CqlResponse(resultSet)
+
+    val checkRes = Check.check(response, session, checks)
+    if (checkRes._2.isEmpty) {
+      writeData(OK, None)
+      next ! checkRes._1(session).markAsSucceeded
     }
-    if(checkFailures.isEmpty) {
-        writeData(OK, None)
-        next ! session.markAsSucceeded
-    } else {
-        val errors = checkFailures.mkString("\n")
-        logger.error(errors)
-        writeData(KO, Some(s"Error verifying results: $errors"))
-        next ! session.markAsFailed
+    else {
+      val errors = checkRes._2.get
+      writeData(KO, Some(s"Error verifying results: $errors"))
+      next ! checkRes._1(session).markAsFailed
     }
   }
 

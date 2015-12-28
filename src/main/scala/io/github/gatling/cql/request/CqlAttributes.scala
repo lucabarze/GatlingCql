@@ -20,17 +20,13 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.request
 
-import io.gatling.core.action.builder.ActionBuilder
-import io.github.gatling.cql.checks.CqlCheckSupport
-import io.github.gatling.cql.request.{CqlProtocolBuilder, CqlProtocol, CqlRequestBuilderBase, CqlRequestBuilder}
+import com.datastax.driver.core.ConsistencyLevel
 
-object Predef extends CqlCheckSupport {
-  val cql = CqlProtocolBuilder
-  
-  def cql(tag: String) = CqlRequestBuilderBase(tag)
-  
-  implicit def cqlProtocolBuilder2cqlProtocol(builder: CqlProtocolBuilder): CqlProtocol = builder.build
-  implicit def cqlRequestBuilder2ActionBuilder(builder: CqlRequestBuilder): ActionBuilder = builder.build()
-}
+import io.github.gatling.cql.CqlStatement
+import io.github.gatling.cql.checks.CqlCheck
+
+case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE,
+                         serialCl:ConsistencyLevel = ConsistencyLevel.SERIAL, checks: List[CqlCheck] = List.empty[CqlCheck])
+

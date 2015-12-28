@@ -20,19 +20,19 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
-
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ThreadFactory, Executors}
-
-import com.google.common.util.concurrent.Futures
+package io.github.gatling.cql.request
 
 import akka.actor.ActorRef
-import io.gatling.core.action.Failable
-import io.gatling.core.action.Interruptable
+import com.google.common.util.concurrent.Futures
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Executors, ThreadFactory}
+
+import io.gatling.core.action.{Failable, Interruptable}
 import io.gatling.core.session.Session
 import io.gatling.core.util.TimeHelper.nowMillis
 import io.gatling.core.validation.Validation
+
+import io.github.gatling.cql.response.CqlResponseHandler
 
 object CqlRequestAction {
   lazy val executor = Executors.newCachedThreadPool(new ThreadFactory {
@@ -54,6 +54,7 @@ class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttri
     val stmt = attr.statement(session)
     stmt.map{ stmt =>
       stmt.setConsistencyLevel(attr.cl)
+      stmt.setSerialConsistencyLevel(attr.serialCl)
       val result = protocol.session.executeAsync(stmt)
       Futures.addCallback(result, new CqlResponseHandler(next, session, start, attr.tag, stmt, attr.checks), CqlRequestAction.executor)
     }

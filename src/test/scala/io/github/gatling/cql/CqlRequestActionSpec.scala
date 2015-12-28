@@ -22,6 +22,8 @@
  */
 package io.github.gatling.cql
 
+import io.github.gatling.cql.checks.CqlCheck
+import io.github.gatling.cql.request.{CqlProtocol, CqlAttributes, CqlRequestAction}
 import org.easymock.Capture
 import org.easymock.EasyMock.capture
 import org.easymock.EasyMock.reset
@@ -52,7 +54,7 @@ class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers wit
   val target = TestActorRef(
     new CqlRequestAction(ActorRef.noSender,
       CqlProtocol(cassandraSession),
-      CqlAttributes("test", statement, ConsistencyLevel.ANY, List.empty[CqlCheck]))).underlyingActor
+      CqlAttributes("test", statement, ConsistencyLevel.ANY, ConsistencyLevel.SERIAL, List.empty[CqlCheck]))).underlyingActor
 
   before {
     reset(statement, cassandraSession)

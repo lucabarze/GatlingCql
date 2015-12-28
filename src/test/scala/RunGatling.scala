@@ -20,12 +20,36 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+import java.io.File
 
-package io.github.gatling
+import io.gatling.app.Gatling
+import io.gatling.core.config.GatlingPropertiesBuilder
+import io.gatling.core.util.PathHelper._
 
-import io.gatling.core.validation.Validation
-import com.datastax.driver.core.ResultSet
+/**
+ * Helper class to run Gatling simulation class (not suitable for unit tests).
+ */
+object RunGatling extends App
+{
+  val projectRootDir = new File(".").toPath
 
-package object cql {
-  type CqlCheck = ResultSet => Validation[Boolean]
+  val mavenResourcesDirectory = projectRootDir / "src" / "test" / "resources"
+  val mavenTargetDirectory = projectRootDir / "target"
+  val mavenBinariesDirectory = mavenTargetDirectory / "test-classes"
+
+  val dataDirectory = mavenResourcesDirectory / "data"
+  val bodiesDirectory = mavenResourcesDirectory / "bodies"
+
+  val resultsDirectory = mavenTargetDirectory / "results"
+
+  val props = new GatlingPropertiesBuilder
+
+  props.dataDirectory(dataDirectory.toString)
+  props.resultsDirectory(resultsDirectory.toString)
+  props.bodiesDirectory(bodiesDirectory.toString)
+  props.binariesDirectory(mavenBinariesDirectory.toString)
+
+  props.simulationClass("io.github.gatling.cql.CheckCompileTest")
+
+  Gatling.fromMap(props.build)
 }

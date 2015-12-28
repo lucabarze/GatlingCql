@@ -20,17 +20,18 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.request
 
-import io.gatling.core.action.builder.ActionBuilder
-import io.github.gatling.cql.checks.CqlCheckSupport
-import io.github.gatling.cql.request.{CqlProtocolBuilder, CqlProtocol, CqlRequestBuilderBase, CqlRequestBuilder}
+import com.datastax.driver.core.Session
+import com.typesafe.scalalogging.StrictLogging
 
-object Predef extends CqlCheckSupport {
-  val cql = CqlProtocolBuilder
-  
-  def cql(tag: String) = CqlRequestBuilderBase(tag)
-  
-  implicit def cqlProtocolBuilder2cqlProtocol(builder: CqlProtocolBuilder): CqlProtocol = builder.build
-  implicit def cqlRequestBuilder2ActionBuilder(builder: CqlRequestBuilder): ActionBuilder = builder.build()
+//just a wrapper around CqlProtocol
+
+object CqlProtocolBuilder {
+  def session(session: Session) = CqlProtocolBuilder(session)
 }
+
+case class CqlProtocolBuilder(session: Session) extends StrictLogging {
+  def build = new CqlProtocol(session)
+}
+

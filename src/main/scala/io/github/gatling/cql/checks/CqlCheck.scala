@@ -20,9 +20,24 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.checks
 
-import com.datastax.driver.core.ConsistencyLevel
+import io.gatling.core.check.{Check, CheckResult}
+import io.gatling.core.session.Session
+import io.gatling.core.validation.Validation
+import io.github.gatling.cql.response.CqlResponse
 
-case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE, checks: List[CqlCheck] = List.empty[CqlCheck])
+import scala.collection.mutable
+
+/**
+  * This class serves as model for the CQL-specific checks
+  *
+  * @param wrapped the underlying check
+  */
+case class CqlCheck(wrapped: Check[CqlResponse])
+  extends Check[CqlResponse] {
+
+  override def check(response: CqlResponse, session: Session)(implicit cache: mutable.Map[Any, Any]): Validation[CheckResult] =
+    wrapped.check(response, session)
+}
 

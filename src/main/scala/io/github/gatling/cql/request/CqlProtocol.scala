@@ -20,19 +20,11 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.request
 
-import io.gatling.core.config.Credentials
-import com.datastax.driver.core.Cluster
 import com.datastax.driver.core.Session
 
-//just a wrapper around CqlProtocol
+import io.gatling.core.config.Protocol
 
-case object CqlProtocolBuilderBase {
-  def session(session: Session) = CqlProtocolBuilder(session)
-}
-
-case class CqlProtocolBuilder(session: Session) {
-  def build = new CqlProtocol(session)
-}
-
+//holds reference to a cluster, just settings
+case class CqlProtocol(session: Session) extends Protocol

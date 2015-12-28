@@ -20,17 +20,20 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.checks
 
-import io.gatling.core.action.builder.ActionBuilder
-import io.github.gatling.cql.checks.CqlCheckSupport
-import io.github.gatling.cql.request.{CqlProtocolBuilder, CqlProtocol, CqlRequestBuilderBase, CqlRequestBuilder}
+import io.gatling.core.check._
+import io.gatling.core.validation.SuccessWrapper
 
-object Predef extends CqlCheckSupport {
-  val cql = CqlProtocolBuilder
-  
-  def cql(tag: String) = CqlRequestBuilderBase(tag)
-  
-  implicit def cqlProtocolBuilder2cqlProtocol(builder: CqlProtocolBuilder): CqlProtocol = builder.build
-  implicit def cqlRequestBuilder2ActionBuilder(builder: CqlRequestBuilder): ActionBuilder = builder.build()
+import io.github.gatling.cql.response.CqlResponse
+
+object CqlCheckBuilders
+{
+
+  private def responseExtender(): Extender[CqlCheck, CqlResponse] =
+    (wrapped: Check[CqlResponse]) => CqlCheck(wrapped)
+
+  val ResponseExtender = responseExtender()
+
+  val PassThroughResponsePreparer: Preparer[CqlResponse, CqlResponse] = (r: CqlResponse) => r.success
 }

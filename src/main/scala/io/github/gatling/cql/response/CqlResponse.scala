@@ -20,16 +20,39 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.response
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.config.Protocols
+import com.datastax.driver.core.{ResultSet, Row}
 
-class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder {
-  def build(next: ActorRef, registry: Protocols) = {
-    val cqlProtocol = registry.getProtocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    system.actorOf(Props(new CqlRequestAction(next, cqlProtocol, attr)))
+import scala.collection.JavaConversions._
+
+abstract class Response
+
+case class CqlResponseBase(resultSet: ResultSet)
+
+class CqlResponse(resultSet: ResultSet) extends CqlResponseBase(resultSet) {
+
+  // implicit cache of all rows of the result set
+  private lazy val allRows:Seq[Row] = resultSet.all()
+
+  /**
+   * Get the number of all rows returned by the CQL statement.
+   * Note that this statement implicitly fetches <b>all</b> rows from the result set!
+   */
+  def rowCount = allRows.length
+
+  /**
+   * Get a column by name returned by the CQL statement.
+   * Note that this statement implicitly fetches <b>all</b> rows from the result set!
+   */
+  def column(name: String): Seq[Any] = {
+    allRows.flatMap( row => {
+      val idx = row.getColumnDefinitions.getIndexOf(name)
+      // idx == -1 means: "column not in result set"
+      if (idx == -1 || row.isNull(idx))
+        None
+      else
+        Some(row.getObject(idx))
+    })
   }
 }
