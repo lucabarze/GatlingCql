@@ -12,8 +12,8 @@ Basic Gatling DSL for Apache Cassandra CQL, prepared statements are supported as
 class CassandraSimulation extends Simulation {
   val keyspace = "test"
   val table_name = "test_table"
-  val session = Cluster.builder().addContactPoint("127.0.0.1")
-                  .build().connect(s"$keyspace") //Your C* session
+  val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
+  val session = cluster.connect(s"$keyspace") //Your C* session
   val cqlConfig = cql.session(session) //Initialize Gatling DSL with your session
 
   //Setup
@@ -63,6 +63,8 @@ class CassandraSimulation extends Simulation {
 
   setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))
     .protocols(cqlConfig)
+
+  after(cluster.close()) // close session and stop associated threads started by the Java/Scala driver
 }
 ```
 
