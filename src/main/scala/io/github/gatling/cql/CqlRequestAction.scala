@@ -22,7 +22,8 @@
  */
 package io.github.gatling.cql
 
-import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ThreadFactory, Executors}
 
 import com.google.common.util.concurrent.Futures
 
@@ -34,7 +35,14 @@ import io.gatling.core.util.TimeHelper.nowMillis
 import io.gatling.core.validation.Validation
 
 object CqlRequestAction {
-  lazy val executor = Executors.newCachedThreadPool()
+  lazy val executor = Executors.newCachedThreadPool(new ThreadFactory {
+    val threadNum: AtomicInteger = new AtomicInteger()
+    override def newThread(r: Runnable): Thread = {
+      val thread = new Thread(r, "cql-request#" + threadNum.incrementAndGet())
+      thread.setDaemon(true)
+      thread
+    }
+  })
 }
 
 class CqlRequestAction(val next: ActorRef, protocol: CqlProtocol, attr: CqlAttributes)
