@@ -35,8 +35,8 @@ import io.gatling.core.scenario.Simulation
 class CassandraSimulation extends Simulation {
   val keyspace = "test"
   val table_name = "test_table"
-  val session = Cluster.builder().addContactPoint("127.0.0.1")
-                  .build().connect() //Your C* session
+  val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
+  val session = cluster.connect() //Your C* session
   session.execute(s"""CREATE KEYSPACE IF NOT EXISTS $keyspace 
                       WITH replication = { 'class' : 'SimpleStrategy', 
                                           'replication_factor': '1'}""")
@@ -88,4 +88,6 @@ class CassandraSimulation extends Simulation {
 
   setUp(scn.inject(rampUsersPerSec(10) to 100 during (30 seconds)))
     .protocols(cqlConfig)
+
+  after(cluster.close())
 }
