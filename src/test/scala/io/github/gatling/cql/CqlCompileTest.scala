@@ -35,7 +35,7 @@ class CqlCompileTest extends Simulation {
   val keyspace = "test"
   val table_name = "test_table"
   val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
-  val session = cluster..connect(s"$keyspace")
+  val session = cluster.connect(s"$keyspace")
   val cqlConfig = cql.session(session)
 
   session.execute(s"CREATE KEYSPACE IF NOT EXISTS $keyspace WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor': '1'}")
