@@ -35,10 +35,10 @@ import io.gatling.core.util.TimeHelper.nowMillis
 import io.gatling.core.validation.Validation
 
 object CqlRequestAction {
-  lazy val threadNum: AtomicInteger = new AtomicInteger(1)
   lazy val executor = Executors.newCachedThreadPool(new ThreadFactory {
+    val threadNum: AtomicInteger = new AtomicInteger()
     override def newThread(r: Runnable): Thread = {
-      var thread = new Thread(r, "cql-request#" + threadNum.incrementAndGet())
+      val thread = new Thread(r, "cql-request#" + threadNum.incrementAndGet())
       thread.setDaemon(true)
       thread
     }
