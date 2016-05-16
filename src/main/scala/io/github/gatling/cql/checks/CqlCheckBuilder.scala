@@ -23,10 +23,10 @@
 package io.github.gatling.cql.checks
 
 import com.datastax.driver.core.{ExecutionInfo, ResultSet}
+import io.gatling.commons.validation.{SuccessWrapper, Validation}
 import io.gatling.core.check.extractor.{Extractor, SingleArity}
 import io.gatling.core.check.{FindCheckBuilder, ValidatorCheckBuilder}
-import io.gatling.core.session.{Expression, ExpressionWrapper}
-import io.gatling.core.validation.{SuccessWrapper, Validation}
+import io.gatling.core.session.{Expression, ExpressionSuccessWrapper}
 
 import io.github.gatling.cql.checks.CqlCheckBuilders._
 import io.github.gatling.cql.response.CqlResponse
@@ -44,7 +44,7 @@ object CqlCheckBuilder {
     def apply(prepared: CqlResponse): Validation[Option[ExecutionInfo]] = {
       Some(prepared.resultSet.getExecutionInfo).success
     }
-  }.expression
+  }.expressionSuccess
 
   val ExecutionInfo = new CqlResponseFindCheckBuilder[ExecutionInfo](ExecutionInfoExtractor)
 
@@ -55,7 +55,7 @@ object CqlCheckBuilder {
     def apply(prepared: CqlResponse): Validation[Option[ResultSet]] = {
       Some(prepared.resultSet).success
     }
-  }.expression
+  }.expressionSuccess
 
   val ResultSet = new CqlResponseFindCheckBuilder[ResultSet](ResultSetExtractor)
 
@@ -66,7 +66,7 @@ object CqlCheckBuilder {
     def apply(prepared: CqlResponse): Validation[Option[Int]] = {
       Some(prepared.rowCount).success
     }
-  }.expression
+  }.expressionSuccess
 
   val RowCount = new CqlResponseFindCheckBuilder[Int](RowCountExtractor)
 
@@ -77,7 +77,7 @@ object CqlCheckBuilder {
     def apply(prepared: CqlResponse): Validation[Option[Boolean]] = {
       Some(prepared.resultSet.wasApplied()).success
     }
-  }.expression
+  }.expressionSuccess
 
   val Applied = new CqlResponseFindCheckBuilder[Boolean](AppliedExtractor)
 
@@ -88,7 +88,7 @@ object CqlCheckBuilder {
     def apply(prepared: CqlResponse): Validation[Option[Boolean]] = {
       Some(prepared.resultSet.isExhausted).success
     }
-  }.expression
+  }.expressionSuccess
 
   val Exhausted = new CqlResponseFindCheckBuilder[Boolean](ExhaustedExtractor)
 }

@@ -22,31 +22,31 @@
  */
 package io.github.gatling.cql.response
 
-import akka.actor._
+import com.datastax.driver.core.exceptions.DriverException
 import com.datastax.driver.core.{ResultSet, Statement}
 import com.google.common.util.concurrent.FutureCallback
 import com.typesafe.scalalogging.StrictLogging
-
+import io.gatling.commons.stats._
+import io.gatling.commons.util.TimeHelper.nowMillis
+import io.gatling.commons.validation.Failure
+import io.gatling.core.action.Action
 import io.gatling.core.check.Check
-import io.gatling.core.result.message._
-import io.gatling.core.result.writer.DataWriterClient
 import io.gatling.core.session.Session
-import io.gatling.core.util.TimeHelper.nowMillis
-
+import io.gatling.core.stats.StatsEngine
+import io.gatling.core.stats.message.ResponseTimings
 import io.github.gatling.cql.checks.CqlCheck
 
 
-class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
-  extends FutureCallback[ResultSet]
-  with DataWriterClient
-  with StrictLogging {
+class CqlResponseHandler(next: Action, session: Session, val statsEngine: StatsEngine, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
+  extends FutureCallback[ResultSet] with StrictLogging {
 
-  private def writeData(status: Status, message: Option[String]) = writeRequestData(session, tag, start, nowMillis, session.startDate, nowMillis, status, message, Nil)
+  private def writeData(status: Status, message: Option[String]) =
+    statsEngine.logResponse(session, tag, ResponseTimings(session.startDate, nowMillis), status, None, message, Nil)
 
   def onSuccess(resultSet: ResultSet) = {
     val response = new CqlResponse(resultSet)
 
-    val checkRes = Check.check(response, session, checks)
+    val checkRes: ((Session) => Session, Option[Failure]) = Check.check(response, session, checks)
     if (checkRes._2.isEmpty) {
       writeData(OK, None)
       next ! checkRes._1(session).markAsSucceeded
@@ -59,8 +59,14 @@ class CqlResponseHandler(next: ActorRef, session: Session, start: Long, tag: Str
   }
 
   def onFailure(t: Throwable) = {
-    logger.error(s"$stmt", t)
-    writeData(KO, Some(s"Error executing statement: $t"))
+    if (t.isInstanceOf[DriverException]) {
+      val msg = tag + ": c.d.d.c.e." + t.getClass.getSimpleName + ": " + t.getMessage
+      writeData(KO, Some(msg))
+    }
+    else {
+      logger.error(s"$tag: Error executing statement $stmt", t)
+      writeData(KO, Some(tag + ": " + t.toString))
+    }
     next ! session.markAsFailed
   }
 }

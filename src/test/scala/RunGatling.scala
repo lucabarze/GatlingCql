@@ -22,9 +22,9 @@
  */
 import java.io.File
 
+import io.gatling.commons.util.PathHelper._
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
-import io.gatling.core.util.PathHelper._
 
 /**
  * Helper class to run Gatling simulation class (not suitable for unit tests).

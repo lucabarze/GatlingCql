@@ -22,9 +22,9 @@
  */
 package io.github.gatling.cql.checks
 
+import io.gatling.commons.validation.Validation
 import io.gatling.core.check.{Check, CheckResult}
 import io.gatling.core.session.Session
-import io.gatling.core.validation.Validation
 import io.github.gatling.cql.response.CqlResponse
 
 import scala.collection.mutable

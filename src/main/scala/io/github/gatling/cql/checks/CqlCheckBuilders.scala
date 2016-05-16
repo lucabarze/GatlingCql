@@ -22,8 +22,8 @@
  */
 package io.github.gatling.cql.checks
 
+import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.check._
-import io.gatling.core.validation.SuccessWrapper
 
 import io.github.gatling.cql.response.CqlResponse
 

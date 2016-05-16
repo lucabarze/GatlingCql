@@ -22,14 +22,15 @@
  */
 package io.github.gatling.cql.request
 
-import akka.actor.{ActorRef, Props}
-
+import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.config.Protocols
+import io.gatling.core.structure.ScenarioContext
+import io.gatling.core.util.NameGen
 
-class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder {
-  def build(next: ActorRef, registry: Protocols) = {
-    val cqlProtocol = registry.getProtocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    system.actorOf(Props(new CqlRequestAction(next, cqlProtocol, attr)))
+class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder with NameGen {
+
+  def build(ctx: ScenarioContext, next: Action): Action = {
+    val cqlProtocol = ctx.protocolComponentsRegistry.protocols.protocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
+    new CqlRequestAction(genName("CQL:" + attr.tag), next, ctx.coreComponents.statsEngine, cqlProtocol, attr)
   }
 }

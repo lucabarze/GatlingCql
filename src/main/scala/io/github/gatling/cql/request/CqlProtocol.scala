@@ -24,7 +24,7 @@ package io.github.gatling.cql.request
 
 import com.datastax.driver.core.Session
 
-import io.gatling.core.config.Protocol
+import io.gatling.core.protocol.Protocol
 
 //holds reference to a cluster, just settings
 case class CqlProtocol(session: Session) extends Protocol
