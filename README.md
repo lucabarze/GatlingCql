@@ -78,5 +78,5 @@ Installation
 
 More Information
 ----------------
-* http://gatling.io/docs/2.1.7/quickstart.html
-* http://gatling.io/docs/2.1.7/cheat-sheet.html
+* http://gatling.io/docs/2.2.1/quickstart.html
+* http://gatling.io/docs/2.2.1/cheat-sheet.html
