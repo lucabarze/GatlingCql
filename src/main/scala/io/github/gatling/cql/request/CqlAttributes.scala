@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,28 +20,13 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.request
 
-import com.datastax.driver.core.PreparedStatement
-import com.datastax.driver.core.SimpleStatement
 import com.datastax.driver.core.ConsistencyLevel
-import com.datastax.driver.core.ResultSet
 
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.Expression
+import io.github.gatling.cql.CqlStatement
+import io.github.gatling.cql.checks.CqlCheck
 
+case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE,
+                         serialCl:ConsistencyLevel = ConsistencyLevel.SERIAL, checks: List[CqlCheck] = List.empty[CqlCheck])
 
-case class CqlRequestBuilderBase(tag: String) {
-  def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
-  def execute(prepared: PreparedStatement) = new CqlRequestParamsBuilder(tag, prepared)
-}
-
-case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def withParams(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
-}
-
-case class CqlRequestBuilder(attr: CqlAttributes) {
-    def consistencyLevel(level: ConsistencyLevel) = CqlRequestBuilder(attr.copy(cl= level))
-    def check(check: CqlCheck) = CqlRequestBuilder(attr.copy(checks = check :: attr.checks))
-    def build(): ActionBuilder = new CqlRequestActionBuilder(attr)
-}

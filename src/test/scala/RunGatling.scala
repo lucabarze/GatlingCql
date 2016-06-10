@@ -20,29 +20,36 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+import java.io.File
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import io.gatling.commons.validation._
-import io.gatling.core.session.el.ElCompiler
-import io.gatling.core.session.Session
+import io.gatling.commons.util.PathHelper._
+import io.gatling.app.Gatling
+import io.gatling.core.config.GatlingPropertiesBuilder
 
-class SimpleCqlStatementSpec extends FlatSpec with Matchers {
-    val el = ElCompiler.compile[String]("select * from test where id = ${test}")
-    val target = SimpleCqlStatement(el)
-    
-    "SimpleCqlStatement" should "correctly return SimpleStatement for a valid expression" in {
-      val session = new Session("name", 1, Map("test" -> "5"))
-      val result = target(session) 
-      result shouldBe a[Success[_]]
-      //result.get.getQueryString() shouldBe "select * from test where id = 5"
-      //NOTE: Statement.getQueryString() no longer present in 3.0.2
-    }
-    
-    it should "fail if the expression is wrong" in {
-      val session = new Session("name", 1, Map("test2" -> "5"))
-      target(session) shouldBe "No attribute named 'test' is defined".failure 
-    }
+/**
+ * Helper class to run Gatling simulation class (not suitable for unit tests).
+ */
+object RunGatling extends App
+{
+  val projectRootDir = new File(".").toPath
 
+  val mavenResourcesDirectory = projectRootDir / "src" / "test" / "resources"
+  val mavenTargetDirectory = projectRootDir / "target"
+  val mavenBinariesDirectory = mavenTargetDirectory / "test-classes"
+
+  val dataDirectory = mavenResourcesDirectory / "data"
+  val bodiesDirectory = mavenResourcesDirectory / "bodies"
+
+  val resultsDirectory = mavenTargetDirectory / "results"
+
+  val props = new GatlingPropertiesBuilder
+
+  props.dataDirectory(dataDirectory.toString)
+  props.resultsDirectory(resultsDirectory.toString)
+  props.bodiesDirectory(bodiesDirectory.toString)
+  props.binariesDirectory(mavenBinariesDirectory.toString)
+
+  props.simulationClass("io.github.gatling.cql.CheckCompileTest")
+
+  Gatling.fromMap(props.build)
 }

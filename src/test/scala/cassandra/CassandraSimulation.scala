@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -28,9 +28,10 @@ import com.datastax.driver.core.Cluster
 import com.datastax.driver.core.ConsistencyLevel
 
 import io.gatling.core.Predef._
-import io.github.gatling.cql.Predef._;
-
 import io.gatling.core.scenario.Simulation
+
+import io.github.gatling.cql.Predef._
+
 
 class CassandraSimulation extends Simulation {
   val keyspace = "test"
@@ -76,7 +77,8 @@ class CassandraSimulation extends Simulation {
     .exec(cql("simple SELECT") 
          // 'execute' can accept a string 
          // and understands Gatling expression language (EL), i.e. ${randomNum}
-        .execute("SELECT * FROM test_table WHERE num = ${randomNum}")) 
+        .execute("SELECT * FROM test_table WHERE num = ${randomNum}")
+        .check(rowCount.is(1)))
     .exec(cql("prepared INSERT")
          // alternatively 'execute' accepts a prepared statement
         .execute(prepared)

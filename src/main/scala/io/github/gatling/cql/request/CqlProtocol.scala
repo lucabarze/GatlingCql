@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,12 +20,11 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+package io.github.gatling.cql.request
 
-package io.github.gatling
+import com.datastax.driver.core.Session
 
-import io.gatling.core.validation.Validation
-import com.datastax.driver.core.ResultSet
+import io.gatling.core.protocol.Protocol
 
-package object cql {
-  type CqlCheck = ResultSet => Validation[Boolean]
-}
+//holds reference to a cluster, just settings
+case class CqlProtocol(session: Session) extends Protocol

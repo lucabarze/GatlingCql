@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,16 +20,18 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.request
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.config.Protocols
+import com.datastax.driver.core.Session
+import com.typesafe.scalalogging.StrictLogging
 
-class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder {
-  def build(next: ActorRef, registry: Protocols) = {
-    val cqlProtocol = registry.getProtocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    system.actorOf(Props(new CqlRequestAction(next, cqlProtocol, attr)))
-  }
+//just a wrapper around CqlProtocol
+
+object CqlProtocolBuilder {
+  def session(session: Session) = CqlProtocolBuilder(session)
 }
+
+case class CqlProtocolBuilder(session: Session) extends StrictLogging {
+  def build = new CqlProtocol(session)
+}
+

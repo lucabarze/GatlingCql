@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,11 +20,39 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.response
 
-import io.gatling.core.config.{ Credentials, Protocol }
-import com.datastax.driver.core.Cluster
-import com.datastax.driver.core.Session
+import com.datastax.driver.core.{ResultSet, Row}
 
-//holds reference to a cluster, just settings
-case class CqlProtocol(session: Session) extends Protocol
+import scala.collection.JavaConversions._
+
+abstract class Response
+
+case class CqlResponseBase(resultSet: ResultSet)
+
+class CqlResponse(resultSet: ResultSet) extends CqlResponseBase(resultSet) {
+
+  // implicit cache of all rows of the result set
+  private lazy val allRows:Seq[Row] = resultSet.all()
+
+  /**
+   * Get the number of all rows returned by the CQL statement.
+   * Note that this statement implicitly fetches <b>all</b> rows from the result set!
+   */
+  def rowCount = allRows.length
+
+  /**
+   * Get a column by name returned by the CQL statement.
+   * Note that this statement implicitly fetches <b>all</b> rows from the result set!
+   */
+  def column(name: String): Seq[Any] = {
+    allRows.flatMap( row => {
+      val idx = row.getColumnDefinitions.getIndexOf(name)
+      // idx == -1 means: "column not in result set"
+      if (idx == -1 || row.isNull(idx))
+        None
+      else
+        Some(row.getObject(idx))
+    })
+  }
+}

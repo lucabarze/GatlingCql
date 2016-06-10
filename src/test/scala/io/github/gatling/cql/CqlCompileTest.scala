@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,12 +24,13 @@ package io.github.gatling.cql
 
 import scala.concurrent.duration.DurationInt
 
-import com.datastax.driver.core.{ConsistencyLevel, Cluster, ResultSet}
+import com.datastax.driver.core.{ConsistencyLevel, Cluster}
 
 import io.gatling.core.Predef._
-import io.github.gatling.cql.Predef._;
 import io.gatling.core.scenario.Simulation
-import io.gatling.core.validation._
+import io.gatling.http.Predef._
+
+import io.github.gatling.cql.Predef._
 
 class CqlCompileTest extends Simulation {
   val keyspace = "test"
@@ -59,15 +60,34 @@ class CqlCompileTest extends Simulation {
 
   val scn = scenario("Two statements").repeat(1) {
     feed(feeder)
+    .exec(http("GET").get("http://foo.bar/")
+            .check(bodyString)
+    )
     .exec(cql("simple SELECT")
-        .execute("SELECT * FROM test_table WHERE num = ${randomNum}")  //Gatling EL for ${randomNum}"
+        .execute("SELECT * FROM test_table WHERE num = ${randomNum}")
+        .check(exhausted is false)
+        .check(applied is false)
+        .check(columnValue("num").count.greaterThan(1))
+    )
+
+/*
         .check { result =>
           if (result.all().isEmpty) {
             Failure("failed test")
           } else {
             Success(true)
           }
+        }
+        .postProcess {
+          param => {
+            if (!param.result.isExhausted)
+              param.session.set("row-of-" + param.tag, param.result.one().getInt("num"))
+            else
+              param.session
+          }
         })
+*/
+
     .exec(cql("prepared INSERT")
         .execute(prepared)
         .withParams(Integer.valueOf(random.nextInt()), "${randomString}")

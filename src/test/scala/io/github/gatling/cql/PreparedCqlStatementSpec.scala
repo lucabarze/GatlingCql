@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -26,26 +26,25 @@ import org.scalatest.FlatSpec
 import org.scalatest.BeforeAndAfter
 import org.scalatest.Matchers
 import org.scalatest.mock.EasyMockSugar
-import io.gatling.core.session.el.ELCompiler
-import com.datastax.driver.core.PreparedStatement
-import org.easymock.EasyMock._
-import io.gatling.core.validation._
-import com.datastax.driver.core.SimpleStatement
-import io.gatling.core.session.Session
 import com.datastax.driver.core.BoundStatement
+import com.datastax.driver.core.PreparedStatement
+import io.gatling.commons.validation._
+import io.gatling.core.session.el.ElCompiler
+import io.gatling.core.session.Session
+import org.easymock.EasyMock._
 
 class PreparedCqlStatementSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
-  val e1 = ELCompiler.compile[AnyRef]("${foo}")
-  val e2 = ELCompiler.compile[AnyRef]("${baz}")
+  val e1 = ElCompiler.compile[AnyRef]("${foo}")
+  val e2 = ElCompiler.compile[AnyRef]("${baz}")
   val prepared = mock[PreparedStatement]
   val target = BoundCqlStatement(prepared, e1, e2)
-  
+
   before {
     reset(prepared)
   }
-  
+
   "BoundCqlStatement" should "correctly bind values to a prepared statement" in {
-    val session = new Session("name", "user", Map("foo" -> Integer.valueOf(5), "baz" -> "BaZ"))
+    val session = new Session("name", 1, Map("foo" -> Integer.valueOf(5), "baz" -> "BaZ"))
     expecting {
       prepared.bind(Integer.valueOf(5), "BaZ").andReturn(mock[BoundStatement])
     }
@@ -53,9 +52,9 @@ class PreparedCqlStatementSpec extends FlatSpec with EasyMockSugar with Matchers
       target(session) shouldBe a[Success[_]]
     }
   }
-  
+
   it should "fail if the expression is wrong and return the 1st error" in {
-    val session = new Session("name", "user", Map("fu" -> Integer.valueOf(5), "buz" -> "BaZ"))
+    val session = new Session("name", 1, Map("fu" -> Integer.valueOf(5), "buz" -> "BaZ"))
     target(session) shouldBe "No attribute named 'foo' is defined".failure
   }
 }

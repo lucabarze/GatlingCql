@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,9 +20,29 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.checks
 
-import com.datastax.driver.core.ConsistencyLevel
+import io.gatling.commons.validation.{SuccessWrapper, Validation}
+import io.gatling.core.check.extractor._
+import io.github.gatling.cql.response.CqlResponse
 
-case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE, checks: List[CqlCheck] = List.empty[CqlCheck])
 
+abstract class ColumnValueExtractor[X] extends CriterionExtractor[CqlResponse, Any, X] { val criterionName = "columnValue" }
+
+class SingleColumnValueExtractor(val criterion: String, val occurrence: Int) extends ColumnValueExtractor[Any] with FindArity {
+
+  def extract(prepared: CqlResponse): Validation[Option[Any]] =
+    prepared.column(criterion).lift(occurrence).success
+}
+
+class MultipleColumnValueExtractor(val criterion: String) extends ColumnValueExtractor[Seq[Any]] with FindAllArity {
+
+  def extract(prepared: CqlResponse): Validation[Option[Seq[Any]]] =
+    prepared.column(criterion).liftSeqOption.success
+}
+
+class CountColumnValueExtractor(val criterion: String) extends ColumnValueExtractor[Int] with CountArity {
+
+  def extract(prepared: CqlResponse): Validation[Option[Int]] =
+    prepared.column(criterion).liftSeqOption.map(_.size).success
+}

@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,19 +20,24 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package io.github.gatling.cql
+package io.github.gatling.cql.checks
 
-import io.gatling.core.config.Credentials
-import com.datastax.driver.core.Cluster
-import com.datastax.driver.core.Session
+import io.gatling.commons.validation.Validation
+import io.gatling.core.check.{Check, CheckResult}
+import io.gatling.core.session.Session
+import io.github.gatling.cql.response.CqlResponse
 
-//just a wrapper around CqlProtocol
+import scala.collection.mutable
 
-case object CqlProtocolBuilderBase {
-  def session(session: Session) = CqlProtocolBuilder(session)
-}
+/**
+  * This class serves as model for the CQL-specific checks
+  *
+  * @param wrapped the underlying check
+  */
+case class CqlCheck(wrapped: Check[CqlResponse])
+  extends Check[CqlResponse] {
 
-case class CqlProtocolBuilder(session: Session) {
-  def build = new CqlProtocol(session)
+  override def check(response: CqlResponse, session: Session)(implicit cache: mutable.Map[Any, Any]): Validation[CheckResult] =
+    wrapped.check(response, session)
 }
 

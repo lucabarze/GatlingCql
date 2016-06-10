@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,9 +23,11 @@
 package io.github.gatling.cql
 
 import io.gatling.core.action.builder.ActionBuilder
+import io.github.gatling.cql.checks.CqlCheckSupport
+import io.github.gatling.cql.request.{CqlProtocolBuilder, CqlProtocol, CqlRequestBuilderBase, CqlRequestBuilder}
 
-object Predef {
-  val cql = CqlProtocolBuilderBase
+object Predef extends CqlCheckSupport {
+  val cql = CqlProtocolBuilder
   
   def cql(tag: String) = CqlRequestBuilderBase(tag)
   

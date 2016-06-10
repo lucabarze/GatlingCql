@@ -1,7 +1,7 @@
-/**
+/*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Mikhail Stepura
+ * Copyright (c) 2016 GatlingCql developers
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -27,7 +27,7 @@ import com.datastax.driver.core.SimpleStatement
 import com.datastax.driver.core.Statement
 
 import io.gatling.core.session._
-import io.gatling.core.validation._
+import io.gatling.commons.validation._
 
 trait CqlStatement {
   def apply(session:Session): Validation[Statement]
@@ -35,12 +35,12 @@ trait CqlStatement {
 
 
 case class SimpleCqlStatement(statement: Expression[String]) extends CqlStatement {
-  def apply(session: Session) = statement(session).flatMap(stmt => new SimpleStatement(stmt).success) 
+  def apply(session: Session): Validation[Statement] = statement(session).flatMap(stmt => new SimpleStatement(stmt).success)
 }
 
 
 case class BoundCqlStatement(statement: PreparedStatement, params: Expression[AnyRef]*) extends CqlStatement {
-  def apply(session:Session) = {
+  def apply(session:Session): Validation[Statement] = {
     val parsedParams = params.map(param => param(session))
     val (validParsedParams, failures) = parsedParams.partition {case Success(s) => true; case _ => false}
     failures.toList match {
