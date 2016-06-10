@@ -10,8 +10,9 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <encoding>UTF-8</encoding>
-        <scala.version>2.11.7</scala.version>
+        <scala.version>2.11.8</scala.version>
         <gatling.version>2.2.1</gatling.version>
+        <gatling.maven-plugin.version>2.2.0</gatling.maven-plugin.version>
         <cassandra-driver.version>3.0.2</cassandra-driver.version>
     </properties>
 
@@ -108,7 +109,7 @@
             <plugin>
                 <groupId>io.gatling</groupId>
                 <artifactId>gatling-maven-plugin</artifactId>
-                <version>${gatling.version}</version>
+                <version>${gatling.maven-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>com.mycila</groupId>
@@ -118,10 +119,14 @@
                     <header>${project.baseUri}/LICENSE</header>
                     <excludes>
                         <exclude>**/README</exclude>
+                        <exclude>**/LICENSE</exclude>
                         <exclude>src/test/resources/**</exclude>
                         <exclude>src/main/resources/**</exclude>
                         <exclude>**/*.xml</exclude>
                     </excludes>
+                    <mapping>
+                        <scala>SLASHSTAR_STYLE</scala>
+                    </mapping>
                 </configuration>
                 <executions>
                     <execution>
