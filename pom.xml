@@ -199,9 +199,9 @@
         </plugins>
     </build>
 
-    <scm>
-        <developerConnection>scm:git:git@github.com:Mishail/GatlingCql.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
+	<scm>
+		<developerConnection>scm:git:git@github.com:gatling-cql/GatlingCql.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
 
 </project>
