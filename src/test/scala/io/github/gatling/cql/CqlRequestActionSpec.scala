@@ -24,9 +24,8 @@ package io.github.gatling.cql
 
 import io.github.gatling.cql.checks.CqlCheck
 import io.github.gatling.cql.request.{CqlAttributes, CqlProtocol, CqlRequestAction}
-import org.easymock.Capture
-import org.easymock.EasyMock.capture
-import org.easymock.EasyMock.reset
+import org.easymock.{Capture, EasyMock}
+import org.easymock.EasyMock.{anyObject, anyString, capture, reset, eq => eqAs}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
@@ -36,41 +35,45 @@ import com.datastax.driver.core.RegularStatement
 import com.datastax.driver.core.ResultSetFuture
 import com.datastax.driver.core.Session
 import com.datastax.driver.core.SimpleStatement
+import io.gatling.commons.stats.KO
 import io.gatling.commons.validation.FailureWrapper
 import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.CoreComponents
+import io.gatling.core.action.Action
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.session.{Session => GSession}
+import io.gatling.core.stats.StatsEngine
+import io.gatling.core.stats.message.ResponseTimings
 
 class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   val config = GatlingConfiguration.loadForTest()
   val cassandraSession = mock[Session]
   val statement = mock[CqlStatement]
+  val statsEngine = mock[StatsEngine]
+  val nextAction = mock[Action]
   val session = GSession("scenario", 1)
-  val coreComponents = CoreComponents(
-    controller = null,
-    throttler = null,
-    statsEngine = null,
-    exit = null,
-    configuration = config)
 
   val target =
-    new CqlRequestAction("some-name", coreComponents.exit,
-      coreComponents.statsEngine,
+    new CqlRequestAction("some-name", nextAction,
+      statsEngine,
       CqlProtocol(cassandraSession),
       CqlAttributes("test", statement, ConsistencyLevel.ANY, ConsistencyLevel.SERIAL, List.empty[CqlCheck]))
 
   before {
-    reset(statement, cassandraSession)
+    reset(statement, cassandraSession, statsEngine)
   }
 
-  "CqlRequestAction" should "fail if expression is invalid and return the error" in {
+  it should "fail if expression is invalid and return the error" in {
+    val errorMessageCapture = new Capture[Some[String]]
     expecting {
       statement.apply(session).andReturn("OOPS".failure)
+      statsEngine.logResponse(eqAs(session), anyString, anyObject[ResponseTimings], eqAs(KO), eqAs(None), capture(errorMessageCapture), eqAs(Nil))
     }
-//    whenExecuting(statement) {
-//      target.execute(session) should be("OOPS".failure)
-//    }
+
+    whenExecuting(statement, statsEngine) {
+      target.execute(session)
+    }
+    val captureErrorMessage = errorMessageCapture.getValue
+    captureErrorMessage.get should be("Error setting up prepared statement: OOPS")
   }
 
   it should "execute a valid statement" in {
