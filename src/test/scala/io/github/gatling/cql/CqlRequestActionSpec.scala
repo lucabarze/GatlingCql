@@ -22,38 +22,34 @@
  */
 package io.github.gatling.cql
 
-import io.github.gatling.cql.checks.CqlCheck
-import io.github.gatling.cql.request.{CqlAttributes, CqlProtocol, CqlRequestAction}
-import org.easymock.{Capture, EasyMock}
-import org.easymock.EasyMock.{anyObject, anyString, capture, reset, eq => eqAs}
-import org.scalatest.BeforeAndAfter
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.scalatest.mock.EasyMockSugar
-import com.datastax.driver.core.ConsistencyLevel
-import com.datastax.driver.core.RegularStatement
-import com.datastax.driver.core.ResultSetFuture
-import com.datastax.driver.core.Session
-import com.datastax.driver.core.SimpleStatement
+import akka.actor.ActorSystem
+import com.datastax.driver.core._
 import io.gatling.commons.stats.KO
-import io.gatling.commons.validation.FailureWrapper
-import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.commons.validation.{FailureWrapper, SuccessWrapper}
 import io.gatling.core.action.Action
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.session.{Session => GSession}
 import io.gatling.core.stats.StatsEngine
 import io.gatling.core.stats.message.ResponseTimings
+import io.github.gatling.cql.checks.CqlCheck
+import io.github.gatling.cql.request.{CqlAttributes, CqlProtocol, CqlRequestAction}
+import org.easymock.Capture
+import org.easymock.EasyMock.{anyObject, anyString, capture, reset, eq => eqAs}
+import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import org.scalatest.mock.EasyMockSugar
 
 class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   val config = GatlingConfiguration.loadForTest()
   val cassandraSession = mock[Session]
   val statement = mock[CqlStatement]
+  val system = mock[ActorSystem]
   val statsEngine = mock[StatsEngine]
   val nextAction = mock[Action]
   val session = GSession("scenario", 1)
 
   val target =
     new CqlRequestAction("some-name", nextAction,
+      system,
       statsEngine,
       CqlProtocol(cassandraSession),
       CqlAttributes("test", statement, ConsistencyLevel.ANY, ConsistencyLevel.SERIAL, List.empty[CqlCheck]))
