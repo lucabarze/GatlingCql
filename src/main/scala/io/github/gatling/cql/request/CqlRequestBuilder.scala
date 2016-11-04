@@ -32,12 +32,12 @@ import io.github.gatling.cql.checks.CqlCheck
 
 
 case class CqlRequestBuilderBase(tag: String) {
-  def execute(statement: Expression[String]) = new CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
-  def execute(prepared: PreparedStatement) = new CqlRequestParamsBuilder(tag, prepared)
+  def execute(statement: Expression[String]) = CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))
+  def execute(prepared: PreparedStatement) = CqlRequestParamsBuilder(tag, prepared)
 }
 
 case class CqlRequestParamsBuilder(tag: String, prepared: PreparedStatement) {
-  def withParams(params: Expression[AnyRef]*) = new CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params:_*)))
+  def withParams(params: Expression[AnyRef]*) = CqlRequestBuilder(CqlAttributes(tag, BoundCqlStatement(prepared, params: _*)))
 }
 
 case class CqlRequestBuilder(attr: CqlAttributes) {
