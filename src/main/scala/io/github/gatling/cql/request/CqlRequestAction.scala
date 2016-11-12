@@ -22,12 +22,10 @@
  */
 package io.github.gatling.cql.request
 
-import com.google.common.util.concurrent.Futures
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{Executors, ThreadFactory}
-
+import akka.actor.ActorSystem
 import com.datastax.driver.core.Statement
-import io.gatling.commons.stats.{KO, Status}
+import com.google.common.util.concurrent.{Futures, MoreExecutors}
+import io.gatling.commons.stats.KO
 import io.gatling.commons.util.TimeHelper.nowMillis
 import io.gatling.commons.validation.Validation
 import io.gatling.core.action.{Action, ExitableAction}
@@ -36,33 +34,24 @@ import io.gatling.core.stats.StatsEngine
 import io.gatling.core.stats.message.ResponseTimings
 import io.github.gatling.cql.response.CqlResponseHandler
 
-object CqlRequestAction {
-  lazy val executor = Executors.newCachedThreadPool(new ThreadFactory {
-    val threadNum: AtomicInteger = new AtomicInteger()
-
-    override def newThread(r: Runnable): Thread = {
-      val thread = new Thread(r, "cql-request#" + threadNum.incrementAndGet())
-      thread.setDaemon(true)
-      thread
-    }
-  })
-}
-
-class CqlRequestAction(val name: String, val next: Action, val statsEngine: StatsEngine, protocol: CqlProtocol, attr: CqlAttributes)
+class CqlRequestAction(val name: String, val next: Action, system: ActorSystem, val statsEngine: StatsEngine, protocol: CqlProtocol, attr: CqlAttributes)
   extends ExitableAction {
 
   def execute(session: Session): Unit = {
-    val start = nowMillis
     val stmt: Validation[Statement] = attr.statement(session)
+
     stmt.onFailure(err => {
-      statsEngine.logResponse(session, name, ResponseTimings(session.startDate, nowMillis), KO, None, Some("Error setting up prepared statement: " + err), Nil)
+      statsEngine.logResponse(session, name, ResponseTimings(nowMillis, nowMillis), KO, None, Some("Error setting up prepared statement: " + err), Nil)
       next ! session.markAsFailed
     })
+
     stmt.onSuccess({ stmt =>
       stmt.setConsistencyLevel(attr.cl)
       stmt.setSerialConsistencyLevel(attr.serialCl)
+
+      val start = nowMillis
       val result = protocol.session.executeAsync(stmt)
-      Futures.addCallback(result, new CqlResponseHandler(next, session, statsEngine, start, attr.tag, stmt, attr.checks), CqlRequestAction.executor)
+      Futures.addCallback(result, new CqlResponseHandler(next, session, system, statsEngine, start, attr.tag, stmt, attr.checks), MoreExecutors.sameThreadExecutor)
     })
   }
 }

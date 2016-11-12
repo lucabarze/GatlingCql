@@ -22,6 +22,7 @@
  */
 package io.github.gatling.cql.response
 
+import akka.actor.ActorSystem
 import com.datastax.driver.core.exceptions.DriverException
 import com.datastax.driver.core.{ResultSet, Statement}
 import com.google.common.util.concurrent.FutureCallback
@@ -37,36 +38,51 @@ import io.gatling.core.stats.message.ResponseTimings
 import io.github.gatling.cql.checks.CqlCheck
 
 
-class CqlResponseHandler(next: Action, session: Session, val statsEngine: StatsEngine, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
+class CqlResponseHandler(next: Action, session: Session, system: ActorSystem, statsEngine: StatsEngine, start: Long, tag: String, stmt: Statement, checks: List[CqlCheck])
   extends FutureCallback[ResultSet] with StrictLogging {
 
-  private def writeData(status: Status, message: Option[String]) =
-    statsEngine.logResponse(session, tag, ResponseTimings(session.startDate, nowMillis), status, None, message, Nil)
+  private def writeData(status: Status, respTimings: ResponseTimings, message: Option[String]) =
+    statsEngine.logResponse(session, tag, respTimings, status, None, message, Nil)
 
   def onSuccess(resultSet: ResultSet) = {
     val response = new CqlResponse(resultSet)
+    val respTimings = ResponseTimings(start, nowMillis)
 
-    val checkRes: ((Session) => Session, Option[Failure]) = Check.check(response, session, checks)
-    if (checkRes._2.isEmpty) {
-      writeData(OK, None)
-      next ! checkRes._1(session).markAsSucceeded
-    }
-    else {
-      val errors = checkRes._2.get
-      writeData(KO, Some(s"Error verifying results: $errors"))
-      next ! checkRes._1(session).markAsFailed
-    }
+    system.dispatcher.execute(new Runnable() {
+      override def run() {
+        val checkRes: ((Session) => Session, Option[Failure]) = Check.check (response, session, checks)
+
+        if (checkRes._2.isEmpty) {
+          writeData (OK, respTimings, None)
+
+          next ! checkRes._1 (session).markAsSucceeded
+        }
+        else {
+          val errors = checkRes._2.get
+          writeData (KO, respTimings, Some (s"Error verifying results: $errors") )
+
+          next ! checkRes._1 (session).markAsFailed
+        }
+      }
+    })
   }
 
   def onFailure(t: Throwable) = {
-    if (t.isInstanceOf[DriverException]) {
-      val msg = tag + ": c.d.d.c.e." + t.getClass.getSimpleName + ": " + t.getMessage
-      writeData(KO, Some(msg))
-    }
-    else {
-      logger.error(s"$tag: Error executing statement $stmt", t)
-      writeData(KO, Some(tag + ": " + t.toString))
-    }
-    next ! session.markAsFailed
+    val respTimings = ResponseTimings(start, nowMillis)
+
+    system.dispatcher.execute(new Runnable() {
+      override def run() {
+        if (t.isInstanceOf[DriverException]) {
+          val msg = tag + ": c.d.d.c.e." + t.getClass.getSimpleName + ": " + t.getMessage
+          writeData(KO, respTimings, Some(msg))
+        }
+        else {
+          logger.error(s"$tag: Error executing statement $stmt", t)
+          writeData(KO, respTimings, Some(tag + ": " + t.toString))
+        }
+
+        next ! session.markAsFailed
+      }
+    })
   }
 }

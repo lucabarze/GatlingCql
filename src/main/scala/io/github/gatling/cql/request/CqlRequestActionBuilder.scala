@@ -31,6 +31,6 @@ class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder with Na
 
   def build(ctx: ScenarioContext, next: Action): Action = {
     val cqlProtocol = ctx.protocolComponentsRegistry.protocols.protocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    new CqlRequestAction(genName("CQL:" + attr.tag), next, ctx.coreComponents.statsEngine, cqlProtocol, attr)
+    new CqlRequestAction(genName("CQL:" + attr.tag), next, ctx.system, ctx.coreComponents.statsEngine, cqlProtocol, attr)
   }
 }
