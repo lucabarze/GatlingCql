@@ -25,12 +25,20 @@ package io.github.gatling.cql.request
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.structure.ScenarioContext
-import io.gatling.core.util.NameGen
 
-class CqlRequestActionBuilder(attr: CqlAttributes) extends ActionBuilder with NameGen {
 
-  def build(ctx: ScenarioContext, next: Action): Action = {
-    val cqlProtocol = ctx.protocolComponentsRegistry.protocols.protocol[CqlProtocol].getOrElse(throw new UnsupportedOperationException("CQL protocol wasn't registered"))
-    new CqlRequestAction(genName("CQL:" + attr.tag), next, ctx.system, ctx.coreComponents.statsEngine, cqlProtocol, attr)
+class CqlRequestActionBuilder(cqlAttributes: CqlAttributes) extends ActionBuilder {
+
+  override def build(ctx: ScenarioContext, next: Action): Action = {
+        import ctx.{protocolComponentsRegistry, coreComponents, throttled}
+
+    val cqlComponents: CqlComponents = protocolComponentsRegistry.components(CqlProtocol.CqlProtocolKey)
+
+    new CqlRequestAction(
+      next,
+      coreComponents,
+      cqlComponents.cqlProtocol,
+      throttled,
+      cqlAttributes)
   }
 }

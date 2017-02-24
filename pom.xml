@@ -2,18 +2,18 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github</groupId>
     <artifactId>GatlingCql</artifactId>
-    <version>0.0.6-SNAPSHOT</version>
+    <version>0.0.7-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Gatling support for Apache Cassandra CQL</description>
 
     <properties>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <scala.version>2.11.8</scala.version>
-        <gatling.version>2.2.1</gatling.version>
-        <gatling.maven-plugin.version>2.2.0</gatling.maven-plugin.version>
-        <cassandra-driver.version>3.1.1</cassandra-driver.version>
+        <gatling.version>2.2.3</gatling.version>
+        <gatling.maven-plugin.version>2.2.1</gatling.maven-plugin.version>
+        <cassandra-driver.version>3.1.4</cassandra-driver.version>
     </properties>
 
     <dependencies>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_2.11</artifactId>
-            <version>2.2.4</version>
+            <version>3.0.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>

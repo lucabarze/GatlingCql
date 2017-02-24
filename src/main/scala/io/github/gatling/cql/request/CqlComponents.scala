@@ -22,11 +22,14 @@
  */
 package io.github.gatling.cql.request
 
-import com.datastax.driver.core.ConsistencyLevel
+import io.gatling.core.protocol.ProtocolComponents
+import io.gatling.core.session.Session
 
-import io.github.gatling.cql.CqlStatement
-import io.github.gatling.cql.checks.CqlCheck
 
-case class CqlAttributes(tag: String, statement: CqlStatement, cl:ConsistencyLevel = ConsistencyLevel.ONE,
-                         serialCl:ConsistencyLevel = ConsistencyLevel.SERIAL, checks: List[CqlCheck] = List.empty[CqlCheck])
+case class CqlComponents(cqlProtocol: CqlProtocol) extends ProtocolComponents {
 
+  override def onStart: Option[(Session) => Session] = None
+
+  override def onExit: Option[(Session) => Unit] = None
+
+}

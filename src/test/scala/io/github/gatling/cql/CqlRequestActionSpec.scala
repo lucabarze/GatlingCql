@@ -22,12 +22,14 @@
  */
 package io.github.gatling.cql
 
-import akka.actor.ActorSystem
+import akka.actor.ActorRef
 import com.datastax.driver.core._
 import io.gatling.commons.stats.KO
 import io.gatling.commons.validation.{FailureWrapper, SuccessWrapper}
+import io.gatling.core.CoreComponents
 import io.gatling.core.action.Action
 import io.gatling.core.config.GatlingConfiguration
+import io.gatling.core.controller.throttle.Throttler
 import io.gatling.core.session.{Session => GSession}
 import io.gatling.core.stats.StatsEngine
 import io.gatling.core.stats.message.ResponseTimings
@@ -36,36 +38,40 @@ import io.github.gatling.cql.request.{CqlAttributes, CqlProtocol, CqlRequestActi
 import org.easymock.Capture
 import org.easymock.EasyMock.{anyObject, anyString, capture, reset, eq => eqAs}
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import org.scalatest.mock.EasyMockSugar
+import org.scalatest.easymock.EasyMockSugar
 
 class CqlRequestActionSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   val config = GatlingConfiguration.loadForTest()
   val cassandraSession = mock[Session]
   val statement = mock[CqlStatement]
-  val system = mock[ActorSystem]
-  val statsEngine = mock[StatsEngine]
+  val coreComponents = CoreComponents(mock[ActorRef], mock[Throttler], mock[StatsEngine], mock[Action], mock[GatlingConfiguration])
   val nextAction = mock[Action]
+  val throttled = false
   val session = GSession("scenario", 1)
+  val protocol = CqlProtocol(cassandraSession)
 
   val target =
-    new CqlRequestAction("some-name", nextAction,
-      system,
-      statsEngine,
+    new CqlRequestAction(
+      nextAction,
+      coreComponents,
       CqlProtocol(cassandraSession),
-      CqlAttributes("test", statement, ConsistencyLevel.ANY, ConsistencyLevel.SERIAL, List.empty[CqlCheck]))
+      throttled,
+      CqlAttributes("test", statement, ConsistencyLevel.ANY, ConsistencyLevel.SERIAL, List.empty[CqlCheck])
+    )
 
   before {
-    reset(statement, cassandraSession, statsEngine)
+    reset(statement, cassandraSession)
   }
+
 
   it should "fail if expression is invalid and return the error" in {
     val errorMessageCapture = new Capture[Some[String]]
     expecting {
       statement.apply(session).andReturn("OOPS".failure)
-      statsEngine.logResponse(eqAs(session), anyString, anyObject[ResponseTimings], eqAs(KO), eqAs(None), capture(errorMessageCapture), eqAs(Nil))
+      coreComponents.statsEngine.logResponse(eqAs(session), anyString, anyObject[ResponseTimings], eqAs(KO), eqAs(None), capture(errorMessageCapture), eqAs(Nil))
     }
 
-    whenExecuting(statement, statsEngine) {
+    whenExecuting(statement, coreComponents.statsEngine) {
       target.execute(session)
     }
     val captureErrorMessage = errorMessageCapture.getValue

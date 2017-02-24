@@ -25,13 +25,14 @@ package io.github.gatling.cql
 import org.scalatest.FlatSpec
 import org.scalatest.BeforeAndAfter
 import org.scalatest.Matchers
-import org.scalatest.mock.EasyMockSugar
 import com.datastax.driver.core.BoundStatement
 import com.datastax.driver.core.PreparedStatement
 import io.gatling.commons.validation._
 import io.gatling.core.session.el.ElCompiler
 import io.gatling.core.session.Session
 import org.easymock.EasyMock._
+
+import org.scalatest.easymock.EasyMockSugar
 
 class PreparedCqlStatementSpec extends FlatSpec with EasyMockSugar with Matchers with BeforeAndAfter {
   val e1 = ElCompiler.compile[AnyRef]("${foo}")

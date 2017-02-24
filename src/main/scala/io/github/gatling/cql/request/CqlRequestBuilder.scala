@@ -28,8 +28,15 @@ import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
 
 import io.github.gatling.cql.{SimpleCqlStatement, BoundCqlStatement}
+
+import io.github.gatling.cql.CqlStatement
 import io.github.gatling.cql.checks.CqlCheck
 
+case class CqlAttributes(tag: String,
+                         statement: CqlStatement,
+                         cl:ConsistencyLevel = ConsistencyLevel.ONE,
+                         serialCl:ConsistencyLevel = ConsistencyLevel.SERIAL,
+                         checks: List[CqlCheck] = List.empty[CqlCheck])
 
 case class CqlRequestBuilderBase(tag: String) {
   def execute(statement: Expression[String]) = CqlRequestBuilder(CqlAttributes(tag, SimpleCqlStatement(statement)))

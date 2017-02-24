@@ -22,36 +22,100 @@
  */
 package io.github.gatling.cql.request
 
-import akka.actor.ActorSystem
-import com.datastax.driver.core.Statement
-import com.google.common.util.concurrent.{Futures, MoreExecutors}
+import com.datastax.driver.core.exceptions.DriverException
+import com.datastax.driver.core.ResultSet
+import com.google.common.util.concurrent.{FutureCallback, Futures}
+import io.gatling.commons.util.ClockSingleton._
 import io.gatling.commons.stats.KO
-import io.gatling.commons.util.TimeHelper.nowMillis
-import io.gatling.commons.validation.Validation
+import io.gatling.commons.stats._
+import io.gatling.core.CoreComponents
 import io.gatling.core.action.{Action, ExitableAction}
+import io.gatling.core.check.Check
 import io.gatling.core.session.Session
-import io.gatling.core.stats.StatsEngine
 import io.gatling.core.stats.message.ResponseTimings
-import io.github.gatling.cql.response.CqlResponseHandler
+import io.gatling.core.util.NameGen
+import io.github.gatling.cql.response.CqlResponse
 
-class CqlRequestAction(val name: String, val next: Action, system: ActorSystem, val statsEngine: StatsEngine, protocol: CqlProtocol, attr: CqlAttributes)
-  extends ExitableAction {
+class CqlRequestAction( val next: Action,
+                        val coreComponents: CoreComponents,
+                        val protocol: CqlProtocol,
+                        val throttled: Boolean,
+                        val cqlAttributes: CqlAttributes )
+  extends ExitableAction with NameGen{
+
+  val statsEngine = coreComponents.statsEngine
+  override val name = genName(cqlAttributes.tag)
 
   def execute(session: Session): Unit = {
-    val stmt: Validation[Statement] = attr.statement(session)
 
-    stmt.onFailure(err => {
-      statsEngine.logResponse(session, name, ResponseTimings(nowMillis, nowMillis), KO, None, Some("Error setting up prepared statement: " + err), Nil)
-      next ! session.markAsFailed
-    })
+    val parsedStatement = cqlAttributes statement session
 
-    stmt.onSuccess({ stmt =>
-      stmt.setConsistencyLevel(attr.cl)
-      stmt.setSerialConsistencyLevel(attr.serialCl)
+    parsedStatement onFailure ( err => {
+      val msg = s"Error setting up prepared statement: $err"
+      statsEngine logResponse(session, name, ResponseTimings(nowMillis, nowMillis), KO, None, Some(msg), Nil)
+      throttling(throttled, session, next, session.markAsFailed)
+    } )
+
+    parsedStatement onSuccess { statement =>
+
+      statement.setConsistencyLevel(cqlAttributes.cl)
+      statement.setSerialConsistencyLevel(cqlAttributes.serialCl)
 
       val start = nowMillis
-      val result = protocol.session.executeAsync(stmt)
-      Futures.addCallback(result, new CqlResponseHandler(next, session, system, statsEngine, start, attr.tag, stmt, attr.checks), MoreExecutors.sameThreadExecutor)
-    })
+
+      Futures.addCallback(
+        protocol.session.executeAsync(statement),
+        new FutureCallback[ResultSet] {
+
+          override def onSuccess(resultSet: ResultSet): Unit = {
+            val response = new CqlResponse(resultSet)
+            val respTimings = ResponseTimings(start, nowMillis)
+
+            val (checks, errors) = Check.check(response, session, cqlAttributes.checks)
+
+            errors match {
+              case None =>
+                statsEngine logResponse(session, name, respTimings, OK, None, None, Nil)
+                throttling(throttled, session, next, checks(session).markAsSucceeded)
+              case _ =>
+                val msg = s"Error verifying results: " + errors
+                statsEngine logResponse(session, name, respTimings, KO, None, Some(msg), Nil)
+                throttling(throttled, session, next, checks(session).markAsFailed)
+            }
+
+          }
+
+          override def onFailure(t: Throwable): Unit = {
+            val respTimings = ResponseTimings(start, nowMillis)
+
+            t match {
+              case _: DriverException =>
+                val msg = name + ": c.d.d.c.e." + t.getClass.getSimpleName + ": " + t.getMessage
+                statsEngine logResponse(session, name, respTimings, KO, None, Some(msg), Nil)
+
+              case _ =>
+                logger.error(s"$name: Error executing statement $statement", t)
+                statsEngine logResponse(session, name, respTimings, KO, None, Some(name + ": " + t), Nil)
+            }
+
+            throttling(throttled, session, next, session.markAsFailed)
+
+          }
+        }
+      )
+
+    }
+
+
   }
+
+
+  def throttling(throttled: Boolean, session: Session, next: Action, marked: Session) = {
+    if (throttled) {
+      coreComponents.throttler.throttle(session.scenario, () => next ! marked)
+    } else {
+      next ! marked
+    }
+  }
+
 }
